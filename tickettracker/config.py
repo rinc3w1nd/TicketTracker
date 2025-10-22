@@ -6,7 +6,7 @@ import math
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Mapping, MutableMapping, Optional
+from typing import Any, Dict, Iterable, List, Mapping, MutableMapping, Optional
 
 DEFAULT_CONFIG_NAME = "config.json"
 
@@ -91,18 +91,18 @@ class SLAConfig:
         """Return ascending day thresholds for backlog staging by priority."""
 
         raw_thresholds = self.priority_stage_days.get(priority)
-        if raw_thresholds:
-            thresholds = [day for day in raw_thresholds if isinstance(day, int)]
-            thresholds = [day for day in thresholds if day >= 0]
-            thresholds.sort()
-            if thresholds:
-                return thresholds
+        normalized = _normalize_stage_values(raw_thresholds)
+        thresholds = _to_stage_thresholds(normalized)
+        if thresholds:
+            return thresholds
 
-        default_thresholds = DEFAULT_PRIORITY_STAGE_DAYS.get(priority)
-        if default_thresholds:
-            return list(default_thresholds)
+        default_thresholds = _normalize_stage_values(DEFAULT_PRIORITY_STAGE_DAYS.get(priority))
+        thresholds = _to_stage_thresholds(default_thresholds)
+        if thresholds:
+            return thresholds
 
-        return list(DEFAULT_PRIORITY_STAGE_DAYS_FALLBACK)
+        fallback_thresholds = _normalize_stage_values(DEFAULT_PRIORITY_STAGE_DAYS_FALLBACK)
+        return _to_stage_thresholds(fallback_thresholds)
 
 
 @dataclass
@@ -154,6 +154,57 @@ def _coerce_non_negative_int(value: Any) -> Optional[int]:
     if number < 0:
         return None
     return number
+
+
+def _normalize_stage_values(raw_values: Any) -> List[int]:
+    values: List[int] = []
+
+    def _append(value: Any) -> None:
+        number = _coerce_non_negative_int(value)
+        if number is not None:
+            values.append(number)
+
+    if raw_values is None:
+        return values
+
+    if isinstance(raw_values, Mapping):
+        consumed = set()
+        for key in GRADIENT_STAGE_ORDER:
+            if key in raw_values:
+                _append(raw_values[key])
+                consumed.add(key)
+        for key, value in raw_values.items():
+            if key in consumed:
+                continue
+            _append(value)
+        return values
+
+    if isinstance(raw_values, Iterable) and not isinstance(raw_values, (str, bytes)):
+        for value in raw_values:
+            _append(value)
+        return values
+
+    _append(raw_values)
+    return values
+
+
+def _to_stage_thresholds(values: Iterable[int]) -> List[int]:
+    values_list = list(values)
+    if not values_list:
+        return []
+
+    is_strictly_increasing = all(
+        later > earlier for earlier, later in zip(values_list, values_list[1:])
+    )
+    if is_strictly_increasing:
+        return list(values_list)
+
+    thresholds: List[int] = []
+    running_total = 0
+    for value in values_list:
+        running_total += value
+        thresholds.append(running_total)
+    return thresholds
 
 
 def _legacy_stage_thresholds(limit: int) -> List[int]:

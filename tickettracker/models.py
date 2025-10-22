@@ -1,7 +1,7 @@
 """Database models for TicketTracker."""
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Iterable, List, Sequence
 
 from sqlalchemy import event
@@ -39,6 +39,11 @@ class Ticket(db.Model):
     created_at: Mapped[datetime] = mapped_column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
         db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
+    age_reference_date: Mapped[date | None] = mapped_column(
+        db.Date,
+        nullable=True,
+        default=lambda: datetime.utcnow().date(),
     )
 
     updates: Mapped[List["TicketUpdate"]] = relationship(

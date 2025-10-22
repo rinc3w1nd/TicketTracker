@@ -22,6 +22,9 @@
           <span class="due">Due {{ ticket.due_date.strftime('%b %d, %Y %H:%M') }}</span>
         {% else %}
           <span class="due no-date">No due date</span>
+          {% if ticket.age_reference_date %}
+            <span class="age-reference">Aging since {{ ticket.age_reference_date.strftime('%b %d, %Y') }}</span>
+          {% endif %}
         {% endif %}
       </div>
     </div>
@@ -180,6 +183,12 @@
     </div>
     <div class="actions">
       <button type="submit" class="button primary">Add update</button>
+      {% if not ticket.due_date %}
+        <label class="checkbox" for="reage_ticket">
+          <input type="checkbox" id="reage_ticket" name="reage_ticket" value="1" />
+          Re-age ticket
+        </label>
+      {% endif %}
     </div>
   </form>
 </section>

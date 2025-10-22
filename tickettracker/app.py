@@ -8,6 +8,7 @@ from flask import Flask
 
 from .config import AppConfig, load_config
 from .extensions import db
+from .migrations import run_migrations
 
 
 def create_app(config_path: Optional[str | Path] = None) -> Flask:
@@ -40,6 +41,7 @@ def create_app(config_path: Optional[str | Path] = None) -> Flask:
         from . import models  # noqa: F401
 
         db.create_all()
+        run_migrations()
 
     from .views.tickets import tickets_bp
 

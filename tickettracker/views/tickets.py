@@ -71,11 +71,15 @@ def _compute_ticket_color(ticket: Ticket, config: AppConfig) -> str:
                 return config.colors.gradient_stage_color(index)
         return config.colors.gradient_stage_color(len(thresholds) - 1)
 
-    open_days = max(0.0, (now - ticket.created_at).total_seconds() / 86400)
+    reference_date = ticket.age_reference_date or (
+        ticket.created_at.date() if ticket.created_at else now.date()
+    )
+    reference_datetime = datetime.combine(reference_date, datetime.min.time())
+    age_days = max(0.0, (now - reference_datetime).total_seconds() / 86400)
     thresholds = config.sla.priority_thresholds(ticket.priority or "")
     if thresholds:
         for index, threshold in enumerate(thresholds):
-            if open_days <= threshold:
+            if age_days <= threshold:
                 return config.colors.gradient_stage_color(index)
     else:
         return config.colors.gradient_stage_color(0)
@@ -433,6 +437,8 @@ def add_update(ticket_id: int):
     author = request.form.get("author") or None
     new_status = request.form.get("status") or ticket.status
     hold_reason = request.form.get("on_hold_reason") or None
+    raw_re_age = request.form.get("reage_ticket")
+    re_age_requested = (raw_re_age or "").lower() in {"1", "true", "yes", "on"}
 
     previous_status = ticket.status
     if new_status != ticket.status:
@@ -447,6 +453,9 @@ def add_update(ticket_id: int):
         update = None
 
     db.session.flush()
+    if not ticket.due_date and re_age_requested:
+        ticket.age_reference_date = datetime.utcnow().date()
+
     if update:
         _store_attachments(request.files.getlist("attachments"), ticket, update=update)
     else:
