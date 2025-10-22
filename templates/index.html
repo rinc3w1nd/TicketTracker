@@ -56,7 +56,7 @@
 <section class="ticket-grid">
   {% if tickets %}
     {% for ticket in tickets %}
-      <article class="ticket-card" style="--ticket-accent: {{ ticket.display_color }};">
+      <article class="ticket-card" style="--ticket-accent: {{ ticket.display_color }}; --ticket-tint: {{ ticket.tint_color }};">
         <header>
           <div class="title-group">
             <h2><a href="{{ url_for('tickets.ticket_detail', ticket_id=ticket.id) }}">{{ ticket.title }}</a></h2>
