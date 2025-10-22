@@ -12,7 +12,8 @@
       rel="stylesheet"
     />
   </head>
-  {% set is_compact = compact_mode|default(false) %}
+  {% set is_compact = compact_mode|default(true) %}
+  {% set compact_value = '1' if is_compact else '0' %}
   <body class="{% if is_compact %}compact{% endif %}">
     <header class="app-header">
       <div class="brand">
@@ -23,9 +24,9 @@
         </div>
       </div>
       <nav class="nav-links">
-        <a href="{{ url_for('tickets.list_tickets', compact='1') if is_compact else url_for('tickets.list_tickets') }}">Tickets</a>
+        <a href="{{ url_for('tickets.list_tickets', compact=compact_value) }}">Tickets</a>
         <a
-          href="{{ url_for('tickets.create_ticket', compact='1') if is_compact else url_for('tickets.create_ticket') }}"
+          href="{{ url_for('tickets.create_ticket', compact=compact_value) }}"
           class="button primary"
         >
           New Ticket
