@@ -6,11 +6,11 @@
 <article
   class="ticket-detail{% if ticket.is_overdue %} is-overdue{% endif %}"
   data-overdue="{{ 'true' if ticket.is_overdue else 'false' }}"
-  style="--ticket-accent: {{ ticket.display_color }}; --ticket-tint: {{ ticket.tint_color }};"
+  style="--ticket-accent: {{ ticket.display_color }}; --ticket-tint: {{ ticket.tint_color }}; --ticket-title-color: {{ ticket_title_color|default('#f8fafc') }};"
 >
   <header>
     <div class="title-group">
-      <h2>{{ ticket.title }}</h2>
+      <h2 class="ticket-title">{{ ticket.title }}</h2>
       <div class="meta">
         <span class="status">
           <span

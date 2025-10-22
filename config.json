@@ -26,6 +26,7 @@
     "default_due_days": 21
   },
   "colors": {
+    "ticket_title": "#f8fafc",
     "gradient": {
       "stage0": "#bae6fd",
       "stage1": "#fde047",

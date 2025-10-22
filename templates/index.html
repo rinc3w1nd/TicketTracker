@@ -96,7 +96,7 @@
   </form>
 </section>
 
-<section class="ticket-grid">
+<section class="ticket-grid" style="--ticket-title-color: {{ ticket_title_color|default('#f8fafc') }};">
   {% if tickets %}
     {% for ticket in tickets %}
       <article
@@ -110,8 +110,11 @@
       >
         <header>
           <div class="title-group">
-            <h2>
-              <a href="{{ url_for('tickets.ticket_detail', ticket_id=ticket.id, compact=compact_value) }}">
+            <h2 class="ticket-title">
+              <a
+                class="ticket-title-link"
+                href="{{ url_for('tickets.ticket_detail', ticket_id=ticket.id, compact=compact_value) }}"
+              >
                 {{ ticket.title }}
               </a>
             </h2>
