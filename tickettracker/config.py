@@ -37,6 +37,23 @@ DEFAULT_PRIORITY_STAGE_DAYS_FALLBACK: List[int] = [7, 14, 21, 28]
 DEFAULT_BACKLOG_DUE_DAYS = 21
 
 
+DEFAULT_CLIPBOARD_SUMMARY_SECTIONS: List[str] = [
+    "header",
+    "meta",
+    "people",
+    "description",
+    "links",
+    "notes",
+    "tags",
+    "updates",
+]
+DEFAULT_CLIPBOARD_SUMMARY: Dict[str, Any] = {
+    "html_sections": list(DEFAULT_CLIPBOARD_SUMMARY_SECTIONS),
+    "text_sections": list(DEFAULT_CLIPBOARD_SUMMARY_SECTIONS),
+    "updates_limit": 1,
+}
+
+
 DEFAULT_CONFIG: Dict[str, Any] = {
     "secret_key": DEFAULT_SECRET_KEY,
     "database": {"uri": "sqlite:///tickettracker.db"},
@@ -77,6 +94,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
             "text": "#f1f2f6",
         },
     },
+    "clipboard_summary": DEFAULT_CLIPBOARD_SUMMARY,
 }
 
 
@@ -156,6 +174,30 @@ class ColorConfig:
 
 
 @dataclass
+class ClipboardSummaryConfig:
+    """Sections and limits used to build clipboard-friendly summaries."""
+
+    html_sections: List[str] = field(default_factory=list)
+    text_sections: List[str] = field(default_factory=list)
+    updates_limit: int = DEFAULT_CLIPBOARD_SUMMARY["updates_limit"]
+
+    def sections_for_html(self) -> List[str]:
+        if self.html_sections:
+            return list(self.html_sections)
+        return list(DEFAULT_CLIPBOARD_SUMMARY["html_sections"])
+
+    def sections_for_text(self) -> List[str]:
+        if self.text_sections:
+            return list(self.text_sections)
+        if self.html_sections:
+            return list(self.html_sections)
+        return list(DEFAULT_CLIPBOARD_SUMMARY["text_sections"])
+
+    def max_updates(self) -> int:
+        return max(0, int(self.updates_limit))
+
+
+@dataclass
 class AppConfig:
     """Runtime configuration for the TicketTracker application."""
 
@@ -168,6 +210,7 @@ class AppConfig:
     default_submitted_by: str
     sla: SLAConfig
     colors: ColorConfig
+    clipboard_summary: ClipboardSummaryConfig
 
     @property
     def uploads_path(self) -> Path:
@@ -182,6 +225,26 @@ def _coerce_non_negative_int(value: Any) -> Optional[int]:
     if number < 0:
         return None
     return number
+
+
+def _coerce_string_list(raw_values: Any) -> List[str]:
+    if raw_values is None:
+        return []
+
+    if isinstance(raw_values, Mapping):
+        iterable = raw_values.values()
+    elif isinstance(raw_values, Iterable) and not isinstance(raw_values, (str, bytes)):
+        iterable = raw_values
+    else:
+        iterable = [raw_values]
+
+    sections: List[str] = []
+    for value in iterable:
+        text = str(value or "").strip().lower()
+        if not text or text in sections:
+            continue
+        sections.append(text)
+    return sections
 
 
 def _normalize_stage_values(raw_values: Any) -> List[int]:
@@ -316,6 +379,7 @@ def load_config(config_path: Optional[os.PathLike[str] | str] = None) -> AppConf
 
     sla_config = merged.get("sla", {})
     colors_config = merged.get("colors", {})
+    clipboard_summary_config = merged.get("clipboard_summary", {})
 
     raw_due_stage_days = sla_config.get("due_stage_days", [])
     due_stage_days: List[int] = []
@@ -369,6 +433,33 @@ def load_config(config_path: Optional[os.PathLike[str] | str] = None) -> AppConf
     else:
         ticket_title_color = str(raw_ticket_title_color).strip() or DEFAULT_TICKET_TITLE_COLOR
 
+    html_sections = _coerce_string_list(
+        clipboard_summary_config.get("html_sections")
+    )
+    text_sections = _coerce_string_list(
+        clipboard_summary_config.get("text_sections")
+    )
+    updates_limit = _coerce_non_negative_int(
+        clipboard_summary_config.get("updates_limit")
+    )
+    if updates_limit is None:
+        updates_limit = int(DEFAULT_CLIPBOARD_SUMMARY["updates_limit"])
+
+    resolved_html_sections = (
+        html_sections if html_sections else list(DEFAULT_CLIPBOARD_SUMMARY["html_sections"])
+    )
+    resolved_text_sections = (
+        text_sections
+        if text_sections
+        else (html_sections if html_sections else list(DEFAULT_CLIPBOARD_SUMMARY["text_sections"]))
+    )
+
+    clipboard_summary = ClipboardSummaryConfig(
+        html_sections=resolved_html_sections,
+        text_sections=resolved_text_sections,
+        updates_limit=updates_limit,
+    )
+
     return AppConfig(
         secret_key=secret_key,
         database_uri=database_uri,
@@ -389,4 +480,5 @@ def load_config(config_path: Optional[os.PathLike[str] | str] = None) -> AppConf
             tags=dict(colors_config.get("tags", {})),
             ticket_title=ticket_title_color,
         ),
+        clipboard_summary=clipboard_summary,
     )

@@ -771,6 +771,62 @@ body.compact .filter-fields .filter-actions {
   color: var(--text-muted);
 }
 
+.ticket-card-actions,
+.ticket-detail .ticket-card-actions {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.clipboard-control {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.45rem;
+}
+
+.clipboard-button {
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(15, 23, 42, 0.35);
+  color: var(--text-muted);
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.clipboard-button:hover,
+.clipboard-button:focus-visible {
+  color: #f8fafc;
+  border-color: rgba(56, 189, 248, 0.6);
+  background: rgba(56, 189, 248, 0.22);
+  transform: translateY(-1px);
+  text-decoration: none;
+}
+
+.clipboard-button.is-success {
+  color: #22c55e;
+  border-color: rgba(34, 197, 94, 0.65);
+  background: rgba(34, 197, 94, 0.16);
+}
+
+.clipboard-button.is-error {
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.6);
+  background: rgba(248, 113, 113, 0.16);
+}
+
+.clipboard-button.is-warning {
+  color: #fbbf24;
+  border-color: rgba(251, 191, 36, 0.58);
+  background: rgba(251, 191, 36, 0.16);
+}
+
+.clipboard-status {
+  min-height: 1rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: right;
+}
+
 .priority {
   display: inline-flex;
 }
@@ -967,6 +1023,41 @@ body.compact .filter-fields .filter-actions {
   justify-content: space-between;
   color: var(--text-muted);
   font-size: 0.8rem;
+}
+
+.clipboard-fallback {
+  margin-top: 1.25rem;
+  padding: 1rem;
+  border-radius: 0.9rem;
+  border: 1px dashed rgba(148, 163, 184, 0.4);
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.clipboard-fallback[hidden] {
+  display: none;
+}
+
+.clipboard-fallback p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.clipboard-fallback-text {
+  width: 100%;
+  min-height: 8rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  background: rgba(15, 23, 42, 0.78);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  padding: 0.75rem;
+  resize: vertical;
 }
 
 .ticket-detail {

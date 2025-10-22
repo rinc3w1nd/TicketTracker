@@ -24,6 +24,7 @@ from werkzeug.utils import secure_filename
 from ..config import AppConfig
 from ..extensions import db
 from ..models import Attachment, Tag, Ticket, TicketUpdate
+from ..summary import build_ticket_clipboard_summary
 
 
 tickets_bp = Blueprint("tickets", __name__)
@@ -480,6 +481,10 @@ def list_tickets():
         _annotate_ticket_sla(ticket, config, now)
         _annotate_due_state(ticket, config)
         ticket.compact_tooltip = _compose_compact_tooltip(ticket)  # type: ignore[attr-defined]
+        ticket.clipboard_summary = build_ticket_clipboard_summary(  # type: ignore[attr-defined]
+            ticket,
+            config,
+        )
 
     available_tags = Tag.query.order_by(Tag.name).all()
 
@@ -527,6 +532,10 @@ def ticket_detail(ticket_id: int):
     )  # type: ignore[attr-defined]
     _annotate_ticket_sla(ticket, config)
     _annotate_due_state(ticket, config)
+    ticket.clipboard_summary = build_ticket_clipboard_summary(  # type: ignore[attr-defined]
+        ticket,
+        config,
+    )
     return render_template(
         "ticket_detail.html",
         ticket=ticket,

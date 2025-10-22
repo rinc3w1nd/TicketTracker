@@ -112,6 +112,7 @@
     {% for ticket in tickets %}
       <article
         class="ticket-card{% if ticket.is_overdue %} is-overdue{% endif %}"
+        data-clipboard-container
         data-overdue="{{ 'true' if ticket.is_overdue else 'false' }}"
         style="--ticket-accent: {{ ticket.display_color }}; --ticket-tint: {{ ticket.tint_color }};"
         {% if is_compact and ticket.compact_tooltip %}
@@ -165,9 +166,37 @@
               </span>
             </div>
           </div>
-          <div class="timestamps">
-            <span title="Created">🕒 {{ ticket.created_at.strftime('%b %d, %Y') }}</span>
-            <span title="Updated">🔄 {{ ticket.updated_at.strftime('%b %d, %Y %H:%M') }}</span>
+          <div class="ticket-card-actions">
+            <div class="timestamps">
+              <span title="Created">🕒 {{ ticket.created_at.strftime('%b %d, %Y') }}</span>
+              <span title="Updated">🔄 {{ ticket.updated_at.strftime('%b %d, %Y %H:%M') }}</span>
+            </div>
+            <div class="clipboard-control">
+              <button
+                type="button"
+                class="icon-button clipboard-button"
+                data-clipboard-button
+                aria-describedby="clipboard-status-{{ ticket.id }}"
+                title="Copy ticket summary"
+              >
+                <span class="icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                    <path
+                      d="M16 3H5a2 2 0 0 0-2 2v11h2V5h11V3zm3 4H9a2 2 0 0 0-2 2v12h12a2 2 0 0 0 2-2V7z"
+                      fill="currentColor"
+                    ></path>
+                  </svg>
+                </span>
+                <span class="sr-only">Copy summary</span>
+              </button>
+              <span
+                class="clipboard-status"
+                id="clipboard-status-{{ ticket.id }}"
+                data-clipboard-status
+                role="status"
+                aria-live="polite"
+              ></span>
+            </div>
           </div>
         </header>
         <p class="description">{{ ticket.description|truncate(240) }}</p>
@@ -204,6 +233,16 @@
           <span>{{ ticket.updates|length }} updates</span>
           <span>{{ ticket.attachments|length }} attachments</span>
         </footer>
+        <div class="clipboard-fallback" data-clipboard-fallback hidden>
+          <p>Clipboard access isn't available. Select and copy the summary below.</p>
+          <textarea
+            class="clipboard-fallback-text"
+            data-clipboard-textarea
+            readonly
+          >{{- ticket.clipboard_summary.text | e -}}</textarea>
+        </div>
+        <template data-clipboard-html>{{ ticket.clipboard_summary.html|safe }}</template>
+        <template data-clipboard-text>{{- ticket.clipboard_summary.text -}}</template>
       </article>
     {% endfor %}
   {% else %}
@@ -275,4 +314,9 @@
     });
   });
 </script>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script type="module" src="{{ url_for('static', filename='js/clipboard.js') }}"></script>
 {% endblock %}

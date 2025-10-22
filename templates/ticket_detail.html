@@ -5,6 +5,7 @@
 {% set compact_value = '1' if is_compact else '0' %}
 <article
   class="ticket-detail{% if ticket.is_overdue %} is-overdue{% endif %}"
+  data-clipboard-container
   data-overdue="{{ 'true' if ticket.is_overdue else 'false' }}"
   style="--ticket-accent: {{ ticket.display_color }}; --ticket-tint: {{ ticket.tint_color }}; --ticket-title-color: {{ ticket_title_color|default('#f8fafc') }};"
 >
@@ -47,11 +48,50 @@
         </span>
       </div>
     </div>
-    <div class="timestamps">
-      <span>Created {{ ticket.created_at.strftime('%b %d, %Y %H:%M') }}</span>
-      <span>Updated {{ ticket.updated_at.strftime('%b %d, %Y %H:%M') }}</span>
+    <div class="ticket-card-actions">
+      <div class="timestamps">
+        <span>Created {{ ticket.created_at.strftime('%b %d, %Y %H:%M') }}</span>
+        <span>Updated {{ ticket.updated_at.strftime('%b %d, %Y %H:%M') }}</span>
+      </div>
+      <div class="clipboard-control">
+        <button
+          type="button"
+          class="icon-button clipboard-button"
+          data-clipboard-button
+          aria-describedby="clipboard-status-{{ ticket.id }}"
+          title="Copy ticket summary"
+        >
+          <span class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+              <path
+                d="M16 3H5a2 2 0 0 0-2 2v11h2V5h11V3zm3 4H9a2 2 0 0 0-2 2v12h12a2 2 0 0 0 2-2V7z"
+                fill="currentColor"
+              ></path>
+            </svg>
+          </span>
+          <span class="sr-only">Copy summary</span>
+        </button>
+        <span
+          class="clipboard-status"
+          id="clipboard-status-{{ ticket.id }}"
+          data-clipboard-status
+          role="status"
+          aria-live="polite"
+        ></span>
+      </div>
     </div>
   </header>
+
+  <div class="clipboard-fallback" data-clipboard-fallback hidden>
+    <p>Clipboard access isn't available. Select and copy the summary below.</p>
+    <textarea
+      class="clipboard-fallback-text"
+      data-clipboard-textarea
+      readonly
+    >{{- ticket.clipboard_summary.text | e -}}</textarea>
+  </div>
+  <template data-clipboard-html>{{ ticket.clipboard_summary.html|safe }}</template>
+  <template data-clipboard-text>{{- ticket.clipboard_summary.text -}}</template>
 
   <section class="detail-grid">
     <div>
@@ -234,4 +274,9 @@
     updateToggleHold();
   }
 </script>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script type="module" src="{{ url_for('static', filename='js/clipboard.js') }}"></script>
 {% endblock %}
