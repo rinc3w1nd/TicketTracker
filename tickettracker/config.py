@@ -95,6 +95,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         },
     },
     "clipboard_summary": DEFAULT_CLIPBOARD_SUMMARY,
+    "demo_mode": False,
 }
 
 
@@ -144,6 +145,17 @@ class SLAConfig:
 
         return float(limit) - float(age_days)
 
+    def to_dict(self) -> Dict[str, Any]:
+        """Return a JSON-serializable representation of the SLA configuration."""
+
+        return {
+            "due_stage_days": list(self.due_stage_days),
+            "priority_stage_days": {
+                str(key): list(values) for key, values in self.priority_stage_days.items()
+            },
+            "default_due_days": self.default_due_days,
+        }
+
 
 @dataclass
 class ColorConfig:
@@ -172,6 +184,17 @@ class ColorConfig:
         value = str(self.ticket_title or "").strip()
         return value or DEFAULT_TICKET_TITLE_COLOR
 
+    def to_dict(self) -> Dict[str, Any]:
+        """Return a JSON-serializable representation of the color palette."""
+
+        return {
+            "gradient": dict(self.gradient),
+            "statuses": dict(self.statuses),
+            "priorities": dict(self.priorities),
+            "tags": dict(self.tags),
+            "ticket_title": self.ticket_title,
+        }
+
 
 @dataclass
 class ClipboardSummaryConfig:
@@ -196,6 +219,15 @@ class ClipboardSummaryConfig:
     def max_updates(self) -> int:
         return max(0, int(self.updates_limit))
 
+    def to_dict(self) -> Dict[str, Any]:
+        """Return a JSON-serializable representation of clipboard options."""
+
+        return {
+            "html_sections": list(self.html_sections),
+            "text_sections": list(self.text_sections),
+            "updates_limit": int(self.updates_limit),
+        }
+
 
 @dataclass
 class AppConfig:
@@ -211,10 +243,29 @@ class AppConfig:
     sla: SLAConfig
     colors: ColorConfig
     clipboard_summary: ClipboardSummaryConfig
+    demo_mode: bool = False
+    source_path: Optional[Path] = None
 
     @property
     def uploads_path(self) -> Path:
         return self.uploads_directory
+
+    def to_json_dict(self) -> Dict[str, Any]:
+        """Return a JSON-compatible dictionary representing the configuration."""
+
+        return {
+            "secret_key": self.secret_key,
+            "database": {"uri": self.database_uri},
+            "uploads": {"directory": str(self.uploads_directory)},
+            "default_submitted_by": self.default_submitted_by,
+            "priorities": list(self.priorities),
+            "hold_reasons": list(self.hold_reasons),
+            "workflow": list(self.workflow),
+            "sla": self.sla.to_dict(),
+            "colors": self.colors.to_dict(),
+            "clipboard_summary": self.clipboard_summary.to_dict(),
+            "demo_mode": bool(self.demo_mode),
+        }
 
 
 def _coerce_non_negative_int(value: Any) -> Optional[int]:
@@ -245,6 +296,29 @@ def _coerce_string_list(raw_values: Any) -> List[str]:
             continue
         sections.append(text)
     return sections
+
+
+def _coerce_bool(value: Any, *, default: bool = False) -> bool:
+    """Return a best-effort boolean interpretation of ``value``."""
+
+    if isinstance(value, bool):
+        return value
+
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"1", "true", "yes", "on"}:
+            return True
+        if normalized in {"0", "false", "no", "off"}:
+            return False
+        return default
+
+    if value is None:
+        return default
+
+    if isinstance(value, (int, float)):
+        return bool(value)
+
+    return default
 
 
 def _normalize_stage_values(raw_values: Any) -> List[int]:
@@ -341,10 +415,12 @@ def load_config(config_path: Optional[os.PathLike[str] | str] = None) -> AppConf
     provided_path = Path(config_path) if config_path else None
     env_path = Path(os.environ["TICKETTRACKER_CONFIG"]) if "TICKETTRACKER_CONFIG" in os.environ else None
 
-    search_paths = [provided_path, env_path]
+    default_paths: List[Optional[Path]] = []
     if provided_path is None and env_path is None:
-        search_paths.append(Path.cwd() / DEFAULT_CONFIG_NAME)
-        search_paths.append(Path(__file__).resolve().parent.parent / DEFAULT_CONFIG_NAME)
+        default_paths.append(Path.cwd() / DEFAULT_CONFIG_NAME)
+        default_paths.append(Path(__file__).resolve().parent.parent / DEFAULT_CONFIG_NAME)
+
+    search_paths = [provided_path, env_path, *default_paths]
 
     config_file: Optional[Path] = None
     for candidate in search_paths:
@@ -352,13 +428,22 @@ def load_config(config_path: Optional[os.PathLike[str] | str] = None) -> AppConf
             config_file = candidate
             break
 
+    source_path: Optional[Path]
     if config_file:
         with config_file.open("r", encoding="utf-8") as fh:
             loaded_data = json.load(fh)
         base_path = config_file.parent
+        source_path = config_file
     else:
         loaded_data = {}
-        base_path = Path.cwd()
+        fallback_path = provided_path or env_path
+        if fallback_path is None:
+            fallback_path = default_paths[0] if default_paths else Path.cwd() / DEFAULT_CONFIG_NAME
+        source_path = fallback_path
+        base_path = source_path.parent
+
+    if source_path is not None:
+        source_path = source_path.resolve()
 
     merged: Dict[str, Any] = json.loads(json.dumps(DEFAULT_CONFIG))  # deep copy
     _merge_dict(merged, loaded_data)
@@ -460,6 +545,8 @@ def load_config(config_path: Optional[os.PathLike[str] | str] = None) -> AppConf
         updates_limit=updates_limit,
     )
 
+    demo_mode = _coerce_bool(merged.get("demo_mode"), default=False)
+
     return AppConfig(
         secret_key=secret_key,
         database_uri=database_uri,
@@ -481,4 +568,25 @@ def load_config(config_path: Optional[os.PathLike[str] | str] = None) -> AppConf
             ticket_title=ticket_title_color,
         ),
         clipboard_summary=clipboard_summary,
+        demo_mode=demo_mode,
+        source_path=source_path,
     )
+
+
+def save_config(config: AppConfig, path: Optional[os.PathLike[str] | str] = None) -> Path:
+    """Persist ``config`` to disk and return the resolved path used."""
+
+    target_path = Path(path) if path is not None else config.source_path
+    if target_path is None:
+        raise ValueError("Configuration path is unknown; provide a destination when saving.")
+
+    target_path = target_path.resolve()
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+
+    payload = config.to_json_dict()
+    with target_path.open("w", encoding="utf-8") as handle:
+        json.dump(payload, handle, indent=2)
+        handle.write("\n")
+
+    config.source_path = target_path
+    return target_path

@@ -50,6 +50,15 @@
           <span class="sr-only">Create a new ticket</span>
         </a>
         <a
+          href="{{ url_for('settings.view_settings', compact=compact_value) }}"
+          class="icon-button"
+          aria-label="Configure settings"
+          title="Configure settings"
+        >
+          <span class="icon" aria-hidden="true">⚙️</span>
+          <span class="sr-only">Settings</span>
+        </a>
+        <a
           href="{{ compact_toggle_url|default(request.url) }}"
           class="button icon-button toggle-compact"
           role="switch"
