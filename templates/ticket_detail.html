@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% block title %}{{ ticket.title }} · TicketTracker{% endblock %}
+{% block content %}
+<article class="ticket-detail" style="--ticket-accent: {{ ticket.display_color }};">
+  <header>
+    <div class="title-group">
+      <h2>{{ ticket.title }}</h2>
+      <div class="meta">
+        <span class="status">{{ ticket.status }}{% if ticket.status == 'On Hold' and ticket.on_hold_reason %} · {{ ticket.on_hold_reason }}{% endif %}</span>
+        <span class="priority" data-priority="{{ ticket.priority }}">{{ ticket.priority }}</span>
+        {% if ticket.due_date %}
+          <span class="due">Due {{ ticket.due_date.strftime('%b %d, %Y %H:%M') }}</span>
+        {% else %}
+          <span class="due no-date">No due date</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="timestamps">
+      <span>Created {{ ticket.created_at.strftime('%b %d, %Y %H:%M') }}</span>
+      <span>Updated {{ ticket.updated_at.strftime('%b %d, %Y %H:%M') }}</span>
+    </div>
+  </header>
+
+  <section class="detail-grid">
+    <div>
+      <h3>Description</h3>
+      <p>{{ ticket.description|urlize|replace('\n', '<br />')|safe }}</p>
+    </div>
+    <aside>
+      <dl>
+        {% if ticket.requester %}
+          <div>
+            <dt>Requester</dt>
+            <dd>{{ ticket.requester }}</dd>
+          </div>
+        {% endif %}
+        {% if ticket.watchers %}
+          <div>
+            <dt>Watchers</dt>
+            <dd>{{ ticket.watchers|join(', ') }}</dd>
+          </div>
+        {% endif %}
+        {% if ticket.links %}
+          <div>
+            <dt>Links</dt>
+            <dd>{{ ticket.links|urlize }}</dd>
+          </div>
+        {% endif %}
+        {% if ticket.notes %}
+          <div>
+            <dt>Notes</dt>
+            <dd>{{ ticket.notes|urlize|replace('\n', '<br />')|safe }}</dd>
+          </div>
+        {% endif %}
+      </dl>
+      <div class="actions">
+        <a class="button" href="{{ url_for('tickets.edit_ticket', ticket_id=ticket.id) }}">Edit ticket</a>
+      </div>
+    </aside>
+  </section>
+
+  {% if ticket.tags %}
+    <section class="tag-list">
+      <h3>Tags</h3>
+      <ul class="tags">
+        {% for tag in ticket.tags %}
+          <li style="--tag-color: {{ tag.color or config.colors.tags.background }}; --tag-text: {{ config.colors.tags.text }}">{{ tag.name }}</li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endif %}
+
+  <section class="attachments">
+    <h3>Attachments</h3>
+    {% if ticket.attachments %}
+      <ul>
+        {% for attachment in ticket.attachments %}
+          <li>
+            <a href="{{ url_for('tickets.download_attachment', attachment_id=attachment.id) }}">{{ attachment.display_name }}</a>
+            <span class="attachment-meta">Uploaded {{ attachment.uploaded_at.strftime('%b %d, %Y %H:%M') }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="empty">No attachments yet.</p>
+    {% endif %}
+  </section>
+
+  <section class="updates">
+    <h3>Updates</h3>
+    <ol class="timeline">
+      {% for update in ticket.updates|sort(attribute='created_at', reverse=true) %}
+        <li>
+          <div class="timeline-point"></div>
+          <div class="timeline-content">
+            <div class="update-meta">
+              <span class="author">{{ update.author or 'System' }}</span>
+              <span class="timestamp">{{ update.created_at.strftime('%b %d, %Y %H:%M') }}</span>
+              {% if update.status_from or update.status_to %}
+                <span class="status-change">{{ update.status_from or '—' }} → {{ update.status_to or '—' }}</span>
+              {% endif %}
+            </div>
+            <p>{{ update.body|urlize|replace('\n', '<br />')|safe }}</p>
+            {% if update.attachments %}
+              <ul class="update-attachments">
+                {% for attachment in update.attachments %}
+                  <li><a href="{{ url_for('tickets.download_attachment', attachment_id=attachment.id) }}">{{ attachment.display_name }}</a></li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+          </div>
+        </li>
+      {% else %}
+        <li class="empty">No updates yet.</li>
+      {% endfor %}
+    </ol>
+  </section>
+</article>
+
+<section class="panel">
+  <h3>Add update</h3>
+  <form method="post" action="{{ url_for('tickets.add_update', ticket_id=ticket.id) }}" enctype="multipart/form-data" class="update-form">
+    <div class="field-group">
+      <label for="message">Message</label>
+      <textarea id="message" name="message" rows="4" placeholder="Share progress, blockers, or notes"></textarea>
+    </div>
+    <div class="field-group split">
+      <div>
+        <label for="author">Author</label>
+        <input type="text" id="author" name="author" placeholder="Optional" />
+      </div>
+      <div>
+        <label for="status">Status</label>
+        <select id="status" name="status">
+          {% for status in config.workflow %}
+            <option value="{{ status }}" {% if ticket.status == status %}selected{% endif %}>{{ status }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="field-group" {% if ticket.status != 'On Hold' %}data-hidden{% endif %}>
+      <label for="on_hold_reason">On hold reason</label>
+      <select id="on_hold_reason" name="on_hold_reason">
+        <option value="">Select reason</option>
+        {% for reason in hold_reasons %}
+          <option value="{{ reason }}" {% if ticket.on_hold_reason == reason %}selected{% endif %}>{{ reason }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field-group">
+      <label for="attachments">Attachments</label>
+      <input type="file" id="attachments" name="attachments" multiple />
+      <p class="help">Files are stored locally inside <code>{{ app_config.uploads_path }}</code>.</p>
+    </div>
+    <div class="actions">
+      <button type="submit" class="button primary">Add update</button>
+    </div>
+  </form>
+</section>
+<script>
+  const updateStatusSelect = document.getElementById('status');
+  const updateHoldGroup = document.querySelector('.update-form [data-hidden]');
+  const updateToggleHold = () => {
+    if (!updateHoldGroup) return;
+    if (updateStatusSelect && updateStatusSelect.value === 'On Hold') {
+      updateHoldGroup.removeAttribute('data-hidden');
+    } else {
+      updateHoldGroup.setAttribute('data-hidden', '');
+    }
+  };
+  if (updateStatusSelect) {
+    updateStatusSelect.addEventListener('change', updateToggleHold);
+    updateToggleHold();
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,349 @@
+"""Ticket management views."""
+from __future__ import annotations
+
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Iterable, List
+
+from flask import (
+    Blueprint,
+    current_app,
+    flash,
+    redirect,
+    render_template,
+    request,
+    send_from_directory,
+    url_for,
+)
+from sqlalchemy import or_
+from werkzeug.datastructures import FileStorage
+from werkzeug.utils import secure_filename
+
+from ..config import AppConfig
+from ..extensions import db
+from ..models import Attachment, Tag, Ticket, TicketUpdate
+
+
+tickets_bp = Blueprint("tickets", __name__)
+
+
+def _app_config() -> AppConfig:
+    return current_app.config["APP_CONFIG"]
+
+
+def _parse_datetime(value: str | None) -> datetime | None:
+    if not value:
+        return None
+    try:
+        # HTML datetime-local uses "YYYY-MM-DDTHH:MM"
+        return datetime.fromisoformat(value)
+    except ValueError:
+        return None
+
+
+def _compute_ticket_color(ticket: Ticket, config: AppConfig) -> str:
+    status_palette = {key.lower(): value for key, value in config.colors.statuses.items()}
+    gradient = config.colors.gradient or {}
+    now = datetime.utcnow()
+    status_lower = (ticket.status or "").lower()
+
+    if status_lower == "on hold" and status_palette.get("on_hold"):
+        return status_palette["on_hold"]
+    if status_lower == "resolved" and status_palette.get("resolved"):
+        return status_palette["resolved"]
+    if status_lower == "closed" and status_palette.get("closed"):
+        return status_palette["closed"]
+    if status_lower == "cancelled" and status_palette.get("cancelled"):
+        return status_palette["cancelled"]
+
+    safe_color = gradient.get("safe", "#1e90ff")
+    warning_color = gradient.get("warning", "#ffa502")
+    overdue_color = gradient.get("overdue", "#ff4757")
+
+    if ticket.due_date:
+        delta = ticket.due_date - now
+        overdue_threshold = timedelta(minutes=config.sla.overdue_grace_minutes)
+        due_soon_threshold = timedelta(hours=config.sla.due_soon_hours)
+        if delta < -overdue_threshold:
+            return overdue_color
+        if delta <= due_soon_threshold:
+            return warning_color
+        return safe_color
+
+    # When no due date exists, fall back to age compared to priority thresholds.
+    open_days = (now - ticket.created_at).total_seconds() / 86400
+    allowed_days = config.sla.priority_open_days.get(ticket.priority, 5)
+    if open_days > allowed_days:
+        return overdue_color
+    if open_days > allowed_days * 0.6:
+        return warning_color
+    return safe_color
+
+
+def _parse_tags(raw_tags: str | None) -> List[str]:
+    if not raw_tags:
+        return []
+    return [tag.strip() for tag in raw_tags.replace(";", ",").split(",") if tag.strip()]
+
+
+def _store_attachments(
+    files: Iterable[FileStorage], ticket: Ticket, update: TicketUpdate | None = None
+) -> List[Attachment]:
+    stored: List[Attachment] = []
+    upload_root = Path(current_app.config["UPLOAD_FOLDER"])
+    ticket_folder = upload_root / str(ticket.id)
+    ticket_folder.mkdir(parents=True, exist_ok=True)
+
+    for upload in files:
+        if not upload or not upload.filename:
+            continue
+        original_name = upload.filename
+        safe_name = secure_filename(original_name) or "attachment"
+        timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S%f")
+        stored_name = f"{timestamp}_{safe_name}"
+        target_path = ticket_folder / stored_name
+        upload.save(target_path)
+
+        attachment = Attachment(
+            ticket=ticket,
+            update=update,
+            original_filename=original_name,
+            stored_filename=f"{ticket.id}/{stored_name}",
+            mimetype=upload.mimetype,
+            size=target_path.stat().st_size if target_path.exists() else None,
+        )
+        db.session.add(attachment)
+        stored.append(attachment)
+    return stored
+
+
+@tickets_bp.route("/")
+def list_tickets():
+    config = _app_config()
+    query = Ticket.query
+
+    status_filter = request.args.get("status")
+    if status_filter:
+        query = query.filter(Ticket.status == status_filter)
+
+    priority_filter = request.args.get("priority")
+    if priority_filter:
+        query = query.filter(Ticket.priority == priority_filter)
+
+    tag_filters = request.args.getlist("tag")
+    if tag_filters:
+        tag_mode = request.args.get("tag_mode", "any")
+        if tag_mode == "all":
+            for tag_name in tag_filters:
+                query = query.filter(Ticket.tags.any(Tag.name == tag_name))
+        else:
+            query = query.filter(Ticket.tags.any(Tag.name.in_(tag_filters)))
+
+    search_term = request.args.get("q")
+    if search_term:
+        like_term = f"%{search_term}%"
+        query = query.outerjoin(Ticket.tags).filter(
+            or_(
+                Ticket.title.ilike(like_term),
+                Ticket.description.ilike(like_term),
+                Ticket.notes.ilike(like_term),
+                Ticket.links.ilike(like_term),
+                Ticket.requester.ilike(like_term),
+                Ticket._watchers.ilike(like_term),
+                Tag.name.ilike(like_term),
+            )
+        ).distinct()
+
+    sort = request.args.get("sort", "due")
+    if sort == "priority":
+        priority_case = db.case(
+            whens={priority: index for index, priority in enumerate(config.priorities)},
+            value=Ticket.priority,
+            else_=len(config.priorities),
+        )
+        query = query.order_by(priority_case, Ticket.due_date.is_(None), Ticket.due_date.asc(), Ticket.updated_at.desc())
+    elif sort == "updated":
+        query = query.order_by(Ticket.updated_at.desc())
+    elif sort == "created":
+        query = query.order_by(Ticket.created_at.desc())
+    else:
+        query = query.order_by(Ticket.due_date.is_(None), Ticket.due_date.asc(), Ticket.priority.asc())
+
+    tickets = query.all()
+    for ticket in tickets:
+        ticket.display_color = _compute_ticket_color(ticket, config)  # type: ignore[attr-defined]
+
+    available_tags = Tag.query.order_by(Tag.name).all()
+
+    return render_template(
+        "index.html",
+        tickets=tickets,
+        config=config,
+        available_tags=available_tags,
+        priorities=config.priorities,
+        filters={
+            "status": status_filter,
+            "priority": priority_filter,
+            "tags": tag_filters,
+            "tag_mode": request.args.get("tag_mode", "any"),
+            "search": search_term,
+            "sort": sort,
+        },
+    )
+
+
+@tickets_bp.route("/tickets/<int:ticket_id>")
+def ticket_detail(ticket_id: int):
+    config = _app_config()
+    ticket = Ticket.query.get_or_404(ticket_id)
+    ticket.display_color = _compute_ticket_color(ticket, config)  # type: ignore[attr-defined]
+    return render_template(
+        "ticket_detail.html",
+        ticket=ticket,
+        config=config,
+        priorities=config.priorities,
+        hold_reasons=config.hold_reasons,
+    )
+
+
+@tickets_bp.route("/tickets/new", methods=["GET", "POST"])
+def create_ticket():
+    config = _app_config()
+    if request.method == "POST":
+        title = request.form.get("title", "").strip()
+        description = request.form.get("description", "").strip()
+        if not title or not description:
+            flash("Title and description are required.", "error")
+            return redirect(request.url)
+
+        ticket = Ticket(
+            title=title,
+            description=description,
+            requester=request.form.get("requester") or None,
+            priority=request.form.get("priority") or (config.priorities[0] if config.priorities else "Medium"),
+            status=request.form.get("status") or (config.workflow[0] if config.workflow else "Open"),
+            due_date=_parse_datetime(request.form.get("due_date")),
+            notes=request.form.get("notes") or None,
+            links=request.form.get("links") or None,
+            on_hold_reason=request.form.get("on_hold_reason") or None,
+        )
+        ticket.watchers = request.form.get("watchers", "")
+        db.session.add(ticket)
+        ticket.set_tags(_parse_tags(request.form.get("tags")))
+        ticket.add_update("Ticket created", is_system=True, status_to=ticket.status)
+        if ticket.status != "On Hold":
+            ticket.on_hold_reason = None
+        db.session.flush()
+
+        _store_attachments(request.files.getlist("attachments"), ticket)
+
+        db.session.commit()
+        flash("Ticket created", "success")
+        return redirect(url_for("tickets.ticket_detail", ticket_id=ticket.id))
+
+    return render_template(
+        "ticket_form.html",
+        config=config,
+        ticket=None,
+        priorities=config.priorities,
+        workflow=config.workflow,
+        hold_reasons=config.hold_reasons,
+    )
+
+
+@tickets_bp.route("/tickets/<int:ticket_id>/edit", methods=["GET", "POST"])
+def edit_ticket(ticket_id: int):
+    config = _app_config()
+    ticket = Ticket.query.get_or_404(ticket_id)
+
+    if request.method == "POST":
+        previous_status = ticket.status
+        ticket.title = request.form.get("title", ticket.title)
+        ticket.description = request.form.get("description", ticket.description)
+        ticket.requester = request.form.get("requester") or None
+        ticket.priority = request.form.get("priority") or ticket.priority
+        ticket.status = request.form.get("status") or ticket.status
+        ticket.due_date = _parse_datetime(request.form.get("due_date"))
+        ticket.notes = request.form.get("notes") or None
+        ticket.links = request.form.get("links") or None
+        ticket.on_hold_reason = request.form.get("on_hold_reason") or None
+        ticket.watchers = request.form.get("watchers", "")
+
+        ticket.set_tags(_parse_tags(request.form.get("tags")))
+
+        if ticket.status != previous_status:
+            message = f"Status changed from {previous_status} to {ticket.status}"
+            ticket.add_update(
+                message,
+                status_from=previous_status,
+                status_to=ticket.status,
+                is_system=True,
+            )
+            if ticket.status != "On Hold":
+                ticket.on_hold_reason = None
+
+        db.session.flush()
+        _store_attachments(request.files.getlist("attachments"), ticket)
+        db.session.commit()
+        flash("Ticket updated", "success")
+        return redirect(url_for("tickets.ticket_detail", ticket_id=ticket.id))
+
+    return render_template(
+        "ticket_form.html",
+        config=config,
+        ticket=ticket,
+        priorities=config.priorities,
+        workflow=config.workflow,
+        hold_reasons=config.hold_reasons,
+    )
+
+
+@tickets_bp.route("/tickets/<int:ticket_id>/updates", methods=["POST"])
+def add_update(ticket_id: int):
+    config = _app_config()
+    ticket = Ticket.query.get_or_404(ticket_id)
+
+    message = request.form.get("message", "").strip()
+    author = request.form.get("author") or None
+    new_status = request.form.get("status") or ticket.status
+    hold_reason = request.form.get("on_hold_reason") or None
+
+    previous_status = ticket.status
+    if new_status != ticket.status:
+        ticket.status = new_status
+        ticket.on_hold_reason = hold_reason if new_status == "On Hold" else None
+        status_message = f"Status changed from {previous_status} to {new_status}"
+        ticket.add_update(status_message, status_from=previous_status, status_to=new_status, is_system=True)
+
+    if message:
+        update = ticket.add_update(message, author=author)
+    else:
+        update = None
+
+    db.session.flush()
+    if update:
+        _store_attachments(request.files.getlist("attachments"), ticket, update=update)
+    else:
+        _store_attachments(request.files.getlist("attachments"), ticket)
+
+    db.session.commit()
+    flash("Update added", "success")
+    return redirect(url_for("tickets.ticket_detail", ticket_id=ticket.id))
+
+
+@tickets_bp.route("/attachments/<int:attachment_id>")
+def download_attachment(attachment_id: int):
+    attachment = Attachment.query.get_or_404(attachment_id)
+    upload_root = Path(current_app.config["UPLOAD_FOLDER"])
+    file_path = upload_root / attachment.stored_filename
+    if not file_path.exists():
+        flash("Attachment no longer exists on disk.", "error")
+        return redirect(url_for("tickets.ticket_detail", ticket_id=attachment.ticket_id))
+
+    return send_from_directory(
+        directory=str(file_path.parent),
+        path=file_path.name,
+        as_attachment=True,
+        download_name=attachment.original_filename,
+        mimetype=attachment.mimetype or "application/octet-stream",
+    )

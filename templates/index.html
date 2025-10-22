@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Tickets · TicketTracker{% endblock %}
+{% block content %}
+<section class="panel">
+  <form method="get" class="filter-form">
+    <div class="field-group">
+      <label for="search">Search</label>
+      <input type="search" id="search" name="q" placeholder="Search tickets" value="{{ filters.search or '' }}" />
+    </div>
+    <div class="field-group">
+      <label for="status">Status</label>
+      <select id="status" name="status">
+        <option value="">All</option>
+        {% for status in config.workflow %}
+          <option value="{{ status }}" {% if filters.status == status %}selected{% endif %}>{{ status }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field-group">
+      <label for="priority">Priority</label>
+      <select id="priority" name="priority">
+        <option value="">All</option>
+        {% for priority in priorities %}
+          <option value="{{ priority }}" {% if filters.priority == priority %}selected{% endif %}>{{ priority }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field-group">
+      <label for="tag">Tags</label>
+      <select id="tag" name="tag" multiple size="3">
+        {% for tag in available_tags %}
+          <option value="{{ tag.name }}" {% if tag.name in filters.tags %}selected{% endif %}>{{ tag.name }}</option>
+        {% endfor %}
+      </select>
+      <div class="tag-mode">
+        <label><input type="radio" name="tag_mode" value="any" {% if filters.tag_mode != 'all' %}checked{% endif %} /> Any</label>
+        <label><input type="radio" name="tag_mode" value="all" {% if filters.tag_mode == 'all' %}checked{% endif %} /> All</label>
+      </div>
+    </div>
+    <div class="field-group">
+      <label for="sort">Sort</label>
+      <select id="sort" name="sort">
+        <option value="due" {% if filters.sort == 'due' %}selected{% endif %}>Due date</option>
+        <option value="priority" {% if filters.sort == 'priority' %}selected{% endif %}>Priority</option>
+        <option value="updated" {% if filters.sort == 'updated' %}selected{% endif %}>Recently updated</option>
+        <option value="created" {% if filters.sort == 'created' %}selected{% endif %}>Newest</option>
+      </select>
+    </div>
+    <div class="actions">
+      <button type="submit" class="button primary">Apply</button>
+      <a href="{{ url_for('tickets.list_tickets') }}" class="button">Reset</a>
+    </div>
+  </form>
+</section>
+
+<section class="ticket-grid">
+  {% if tickets %}
+    {% for ticket in tickets %}
+      <article class="ticket-card" style="--ticket-accent: {{ ticket.display_color }};">
+        <header>
+          <div class="title-group">
+            <h2><a href="{{ url_for('tickets.ticket_detail', ticket_id=ticket.id) }}">{{ ticket.title }}</a></h2>
+            <div class="meta">
+              <span class="status">{{ ticket.status }}{% if ticket.status == 'On Hold' and ticket.on_hold_reason %} · {{ ticket.on_hold_reason }}{% endif %}</span>
+              <span class="priority" data-priority="{{ ticket.priority }}">{{ ticket.priority }}</span>
+              {% if ticket.due_date %}
+                <span class="due">Due {{ ticket.due_date.strftime('%b %d, %Y %H:%M') }}</span>
+              {% else %}
+                <span class="due no-date">No due date</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="timestamps">
+            <span title="Created">🕒 {{ ticket.created_at.strftime('%b %d, %Y') }}</span>
+            <span title="Updated">🔄 {{ ticket.updated_at.strftime('%b %d, %Y %H:%M') }}</span>
+          </div>
+        </header>
+        <p class="description">{{ ticket.description|truncate(240) }}</p>
+        <dl class="ticket-details">
+          {% if ticket.requester %}
+            <div>
+              <dt>Requester</dt>
+              <dd>{{ ticket.requester }}</dd>
+            </div>
+          {% endif %}
+          {% if ticket.watchers %}
+            <div>
+              <dt>Watchers</dt>
+              <dd>{{ ticket.watchers|join(', ') }}</dd>
+            </div>
+          {% endif %}
+          {% if ticket.links %}
+            <div>
+              <dt>Links</dt>
+              <dd>{{ ticket.links }}</dd>
+            </div>
+          {% endif %}
+        </dl>
+        {% if ticket.tags %}
+          <ul class="tags">
+            {% for tag in ticket.tags %}
+              <li style="--tag-color: {{ tag.color or config.colors.tags.background }}; --tag-text: {{ config.colors.tags.text }}">{{ tag.name }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+        <footer>
+          <span>{{ ticket.updates|length }} updates</span>
+          <span>{{ ticket.attachments|length }} attachments</span>
+        </footer>
+      </article>
+    {% endfor %}
+  {% else %}
+    <div class="empty-state">
+      <p>No tickets found. <a href="{{ url_for('tickets.create_ticket') }}">Create your first ticket.</a></p>
+    </div>
+  {% endif %}
+</section>
+{% endblock %}
