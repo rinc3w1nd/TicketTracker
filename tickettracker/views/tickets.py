@@ -183,19 +183,48 @@ def list_tickets():
         ).distinct()
 
     sort = request.args.get("sort", "due")
+    valid_sorts = {"due", "priority", "updated", "created"}
+    if sort not in valid_sorts:
+        sort = "due"
+
+    default_orders = {"due": "asc", "priority": "asc", "updated": "desc", "created": "desc"}
+    requested_order = request.args.get("order")
+    order = requested_order if requested_order in {"asc", "desc"} else default_orders[sort]
+
     if sort == "priority":
         priority_case = db.case(
             whens={priority: index for index, priority in enumerate(config.priorities)},
             value=Ticket.priority,
             else_=len(config.priorities),
         )
-        query = query.order_by(priority_case, Ticket.due_date.is_(None), Ticket.due_date.asc(), Ticket.updated_at.desc())
+        if order == "desc":
+            query = query.order_by(
+                priority_case.desc(),
+                Ticket.due_date.is_(None),
+                Ticket.due_date.asc(),
+                Ticket.updated_at.desc(),
+            )
+        else:
+            query = query.order_by(
+                priority_case,
+                Ticket.due_date.is_(None),
+                Ticket.due_date.asc(),
+                Ticket.updated_at.desc(),
+            )
     elif sort == "updated":
-        query = query.order_by(Ticket.updated_at.desc())
+        if order == "asc":
+            query = query.order_by(Ticket.updated_at.asc())
+        else:
+            query = query.order_by(Ticket.updated_at.desc())
     elif sort == "created":
-        query = query.order_by(Ticket.created_at.desc())
+        if order == "asc":
+            query = query.order_by(Ticket.created_at.asc())
+        else:
+            query = query.order_by(Ticket.created_at.desc())
     else:
-        query = query.order_by(Ticket.due_date.is_(None), Ticket.due_date.asc(), Ticket.priority.asc())
+        due_order = Ticket.due_date.desc() if order == "desc" else Ticket.due_date.asc()
+        priority_order = Ticket.priority.desc() if order == "desc" else Ticket.priority.asc()
+        query = query.order_by(Ticket.due_date.is_(None), due_order, priority_order)
 
     tickets = query.all()
     for ticket in tickets:
@@ -217,6 +246,14 @@ def list_tickets():
             "tag_mode": request.args.get("tag_mode", "any"),
             "search": search_term,
             "sort": sort,
+            "order": order,
+            "has_active_filters": bool(
+                status_filter
+                or priority_filter
+                or tag_filters
+                or search_term
+                or request.args.get("tag_mode") == "all"
+            ),
         },
     )
 

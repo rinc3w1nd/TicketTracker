@@ -2,49 +2,89 @@
 {% block title %}Tickets · TicketTracker{% endblock %}
 {% block content %}
 <section class="panel">
-  <form method="get" class="filter-form">
-    <div class="field-group">
-      <label for="search">Search</label>
-      <input type="search" id="search" name="q" placeholder="Search tickets" value="{{ filters.search or '' }}" />
-    </div>
-    <div class="field-group">
-      <label for="status">Status</label>
-      <select id="status" name="status">
-        <option value="">All</option>
-        {% for status in config.workflow %}
-          <option value="{{ status }}" {% if filters.status == status %}selected{% endif %}>{{ status }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="field-group">
-      <label for="priority">Priority</label>
-      <select id="priority" name="priority">
-        <option value="">All</option>
-        {% for priority in priorities %}
-          <option value="{{ priority }}" {% if filters.priority == priority %}selected{% endif %}>{{ priority }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="field-group">
-      <label for="tag">Tags</label>
-      <select id="tag" name="tag" multiple size="3">
-        {% for tag in available_tags %}
-          <option value="{{ tag.name }}" {% if tag.name in filters.tags %}selected{% endif %}>{{ tag.name }}</option>
-        {% endfor %}
-      </select>
-      <div class="tag-mode">
-        <label><input type="radio" name="tag_mode" value="any" {% if filters.tag_mode != 'all' %}checked{% endif %} /> Any</label>
-        <label><input type="radio" name="tag_mode" value="all" {% if filters.tag_mode == 'all' %}checked{% endif %} /> All</label>
+  <form method="get" class="filter-form" data-filter-form>
+    <div class="filter-toolbar">
+      <details
+        class="filter-collapsible"
+        data-filter-collapsible
+        data-has-active="{{ 'true' if filters.has_active_filters else 'false' }}"
+        {% if filters.has_active_filters %}open{% endif %}
+      >
+        <summary class="filter-toggle">
+          <span>Filters</span>
+          {% if filters.has_active_filters %}
+            <span class="filter-indicator" aria-hidden="true">•</span>
+            <span class="sr-only">Active filters applied</span>
+          {% endif %}
+        </summary>
+        <div class="filter-fields">
+          <div class="field-group">
+            <label for="search">Search</label>
+            <input type="search" id="search" name="q" placeholder="Search tickets" value="{{ filters.search or '' }}" />
+          </div>
+          <div class="field-group">
+            <label for="status">Status</label>
+            <select id="status" name="status">
+              <option value="">All</option>
+              {% for status in config.workflow %}
+                <option value="{{ status }}" {% if filters.status == status %}selected{% endif %}>{{ status }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field-group">
+            <label for="priority">Priority</label>
+            <select id="priority" name="priority">
+              <option value="">All</option>
+              {% for priority in priorities %}
+                <option value="{{ priority }}" {% if filters.priority == priority %}selected{% endif %}>{{ priority }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field-group">
+            <label for="tag">Tags</label>
+            <select id="tag" name="tag" multiple size="3">
+              {% for tag in available_tags %}
+                <option value="{{ tag.name }}" {% if tag.name in filters.tags %}selected{% endif %}>{{ tag.name }}</option>
+              {% endfor %}
+            </select>
+            <div class="tag-mode">
+              <label><input type="radio" name="tag_mode" value="any" {% if filters.tag_mode != 'all' %}checked{% endif %} /> Any</label>
+              <label><input type="radio" name="tag_mode" value="all" {% if filters.tag_mode == 'all' %}checked{% endif %} /> All</label>
+            </div>
+          </div>
+        </div>
+      </details>
+      <div class="sort-controls" data-sort-controls>
+        <span class="sort-label">Sort by</span>
+        <div class="sort-button-group" role="group" aria-label="Sort tickets">
+          {% set sort_order = filters.order %}
+          {% set active_sort = filters.sort %}
+          {% set defaults = {'due': 'asc', 'priority': 'asc', 'updated': 'desc', 'created': 'desc'} %}
+          {% set buttons = [
+            ('due', 'Due'),
+            ('priority', 'Priority'),
+            ('updated', 'Updated'),
+            ('created', 'Created')
+          ] %}
+          {% for value, label in buttons %}
+            {% set is_active = active_sort == value %}
+            {% set button_order = sort_order if is_active else defaults[value] %}
+            <button
+              type="submit"
+              name="sort"
+              value="{{ value }}"
+              class="sort-button{% if is_active %} is-active{% endif %}{% if is_active and sort_order == 'desc' %} is-desc{% endif %}"
+              data-sort-button
+              data-default-order="{{ defaults[value] }}"
+              data-order="{{ button_order }}"
+              aria-pressed="{{ 'true' if is_active else 'false' }}"
+            >
+              {{ label }}
+            </button>
+          {% endfor %}
+        </div>
+        <input type="hidden" name="order" value="{{ filters.order }}" data-sort-order />
       </div>
-    </div>
-    <div class="field-group">
-      <label for="sort">Sort</label>
-      <select id="sort" name="sort">
-        <option value="due" {% if filters.sort == 'due' %}selected{% endif %}>Due date</option>
-        <option value="priority" {% if filters.sort == 'priority' %}selected{% endif %}>Priority</option>
-        <option value="updated" {% if filters.sort == 'updated' %}selected{% endif %}>Recently updated</option>
-        <option value="created" {% if filters.sort == 'created' %}selected{% endif %}>Newest</option>
-      </select>
     </div>
     <div class="actions">
       <button type="submit" class="button primary">Apply</button>
@@ -124,4 +164,64 @@
     </div>
   {% endif %}
 </section>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const filterDetails = document.querySelector('[data-filter-collapsible]');
+    if (filterDetails) {
+      const storageKey = 'tickettracker:filters:collapsed';
+      const hasActive = filterDetails.getAttribute('data-has-active') === 'true';
+      try {
+        const storedState = window.localStorage.getItem(storageKey);
+        if (storedState === 'open') {
+          filterDetails.setAttribute('open', '');
+        } else if (storedState === 'closed') {
+          filterDetails.removeAttribute('open');
+        } else if (hasActive) {
+          filterDetails.setAttribute('open', '');
+        }
+      } catch (error) {
+        if (hasActive) {
+          filterDetails.setAttribute('open', '');
+        }
+      }
+
+      filterDetails.addEventListener('toggle', function () {
+        try {
+          window.localStorage.setItem(
+            storageKey,
+            filterDetails.open ? 'open' : 'closed',
+          );
+        } catch (error) {
+          /* ignore persistence errors */
+        }
+      });
+    }
+
+    const orderInput = document.querySelector('[data-sort-order]');
+    const sortButtons = document.querySelectorAll('[data-sort-button]');
+    sortButtons.forEach(function (button) {
+      button.addEventListener('click', function () {
+        if (!orderInput) {
+          return;
+        }
+
+        const isActive = button.classList.contains('is-active');
+        if (isActive) {
+          const nextOrder = orderInput.value === 'asc' ? 'desc' : 'asc';
+          orderInput.value = nextOrder;
+          button.setAttribute('data-order', nextOrder);
+          button.classList.toggle('is-desc', nextOrder === 'desc');
+        } else {
+          const defaultOrder = button.getAttribute('data-default-order');
+          if (defaultOrder) {
+            orderInput.value = defaultOrder;
+            button.classList.toggle('is-desc', defaultOrder === 'desc');
+            button.setAttribute('data-order', defaultOrder);
+          }
+        }
+      });
+    });
+  });
+</script>
 {% endblock %}
