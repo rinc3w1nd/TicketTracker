@@ -16,7 +16,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "secret_key": DEFAULT_SECRET_KEY,
     "database": {"uri": "sqlite:///tickettracker.db"},
     "uploads": {"directory": "uploads"},
-    "priorities": ["Low", "Medium", "High", "Urgent"],
+    "priorities": ["Low", "Medium", "High", "Critical"],
     "hold_reasons": [
         "Awaiting customer response",
         "Blocked by dependency",
@@ -27,7 +27,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "sla": {
         "due_soon_hours": 24,
         "overdue_grace_minutes": 0,
-        "priority_open_days": {"Low": 7, "Medium": 5, "High": 3, "Urgent": 1},
+        "priority_open_days": {"Low": 7, "Medium": 5, "High": 3, "Critical": 1},
     },
     "colors": {
         "gradient": {
@@ -42,10 +42,10 @@ DEFAULT_CONFIG: Dict[str, Any] = {
             "cancelled": "#747d8c",
         },
         "priorities": {
-            "Low": "#70a1ff",
-            "Medium": "#ffa502",
-            "High": "#ff6b81",
-            "Urgent": "#ff4757",
+            "Low": "#3b82f6",
+            "Medium": "#facc15",
+            "High": "#f97316",
+            "Critical": "#ef4444",
         },
         "tags": {
             "background": "#2f3542",
