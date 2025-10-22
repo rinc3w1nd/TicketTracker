@@ -104,6 +104,10 @@
         class="ticket-card{% if ticket.is_overdue %} is-overdue{% endif %}"
         data-overdue="{{ 'true' if ticket.is_overdue else 'false' }}"
         style="--ticket-accent: {{ ticket.display_color }}; --ticket-tint: {{ ticket.tint_color }};"
+        {% if is_compact and ticket.compact_tooltip %}
+          title="{{ ticket.compact_tooltip }}"
+          aria-label="{{ ticket.compact_tooltip }}"
+        {% endif %}
       >
         <header>
           <div class="title-group">
@@ -155,26 +159,28 @@
           </div>
         </header>
         <p class="description">{{ ticket.description|truncate(240) }}</p>
-        <dl class="ticket-details">
-          {% if ticket.requester %}
-            <div>
-              <dt>Requester</dt>
-              <dd>{{ ticket.requester }}</dd>
-            </div>
-          {% endif %}
-          {% if ticket.watchers %}
-            <div>
-              <dt>Watchers</dt>
-              <dd>{{ ticket.watchers|join(', ') }}</dd>
-            </div>
-          {% endif %}
-          {% if ticket.links %}
-            <div>
-              <dt>Links</dt>
-              <dd>{{ ticket.links }}</dd>
-            </div>
-          {% endif %}
-        </dl>
+        {% if not is_compact and (ticket.requester or ticket.watchers or ticket.links) %}
+          <dl class="ticket-details">
+            {% if ticket.requester %}
+              <div>
+                <dt>Requester</dt>
+                <dd>{{ ticket.requester }}</dd>
+              </div>
+            {% endif %}
+            {% if ticket.watchers %}
+              <div>
+                <dt>Watchers</dt>
+                <dd>{{ ticket.watchers|join(', ') }}</dd>
+              </div>
+            {% endif %}
+            {% if ticket.links %}
+              <div>
+                <dt>Links</dt>
+                <dd>{{ ticket.links }}</dd>
+              </div>
+            {% endif %}
+          </dl>
+        {% endif %}
         {% if ticket.tags %}
           <ul class="tags">
             {% for tag in ticket.tags %}

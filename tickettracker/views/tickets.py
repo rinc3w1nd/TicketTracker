@@ -258,6 +258,27 @@ def _annotate_due_state(ticket: Ticket, config: AppConfig) -> None:
     ticket.due_badge_color = badge_color  # type: ignore[attr-defined]
 
 
+def _compose_compact_tooltip(ticket: Ticket) -> str | None:
+    """Return a tooltip summarizing requester, watchers, and links."""
+
+    details: List[str] = []
+
+    if ticket.requester:
+        details.append(f"Requester: {ticket.requester}")
+
+    watchers = ticket.watchers
+    if watchers:
+        details.append(f"Watchers: {', '.join(watchers)}")
+
+    if ticket.links:
+        details.append(f"Links: {ticket.links}")
+
+    if not details:
+        return None
+
+    return " • ".join(details)
+
+
 def _boost_overdue_rgb(red: int, green: int, blue: int) -> tuple[int, int, int]:
     """Return an intensified RGB tuple for overdue overlays."""
 
@@ -449,6 +470,7 @@ def list_tickets():
         )  # type: ignore[attr-defined]
         _annotate_ticket_sla(ticket, config, now)
         _annotate_due_state(ticket, config)
+        ticket.compact_tooltip = _compose_compact_tooltip(ticket)  # type: ignore[attr-defined]
 
     available_tags = Tag.query.order_by(Tag.name).all()
 
