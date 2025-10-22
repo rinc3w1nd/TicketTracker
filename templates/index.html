@@ -55,6 +55,15 @@
               <label><input type="radio" name="tag_mode" value="all" {% if filters.tag_mode == 'all' %}checked{% endif %} /> All</label>
             </div>
           </div>
+          <div class="actions filter-actions" role="group" aria-label="Filter actions">
+            <button type="submit" class="button primary">Apply</button>
+            <a
+              href="{{ url_for('tickets.list_tickets', compact=compact_value) }}"
+              class="button"
+            >
+              Reset
+            </a>
+          </div>
         </div>
       </details>
       <div class="sort-controls" data-sort-controls>
@@ -88,10 +97,6 @@
         </div>
         <input type="hidden" name="order" value="{{ filters.order }}" data-sort-order />
       </div>
-    </div>
-    <div class="actions">
-      <button type="submit" class="button primary">Apply</button>
-      <a href="{{ url_for('tickets.list_tickets', compact=compact_value) }}" class="button">Reset</a>
     </div>
   </form>
 </section>
