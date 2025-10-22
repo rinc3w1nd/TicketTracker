@@ -47,18 +47,33 @@ def _parse_datetime(value: str | None) -> datetime | None:
         return None
 
 
-def _compute_ticket_color(ticket: Ticket, config: AppConfig) -> str:
-    status_palette: Dict[str, str] = {}
+def _build_status_palette(config: AppConfig) -> Dict[str, str]:
+    palette: Dict[str, str] = {}
     for key, value in config.colors.statuses.items():
-        lowered = (key or "").lower()
-        if not lowered:
+        normalized_key = (key or "").strip().lower()
+        if not normalized_key or not value:
             continue
-        status_palette[lowered] = value
-        status_palette[lowered.replace(" ", "_")] = value
+        palette[normalized_key] = value
+        palette[normalized_key.replace(" ", "_")] = value
+    return palette
+
+
+def _resolve_status_color(status: str | None, palette: Dict[str, str]) -> str | None:
+    normalized = (status or "").strip().lower()
+    if not normalized:
+        return None
+    return palette.get(normalized) or palette.get(normalized.replace(" ", "_"))
+
+
+def _compute_ticket_color(
+    ticket: Ticket,
+    config: AppConfig,
+    status_palette: Dict[str, str] | None = None,
+) -> str:
+    palette = status_palette or _build_status_palette(config)
 
     now = datetime.utcnow()
-    status_lower = (ticket.status or "").lower()
-    status_color = status_palette.get(status_lower) or status_palette.get(status_lower.replace(" ", "_"))
+    status_color = _resolve_status_color(ticket.status, palette)
     if status_color:
         return status_color
 
@@ -218,6 +233,29 @@ def _annotate_ticket_sla(
         intensity=tint_intensity,
         overdue=sla_breached,
     )  # type: ignore[attr-defined]
+
+
+def _annotate_due_state(ticket: Ticket, config: AppConfig) -> None:
+    """Attach due-badge metadata used by templates."""
+
+    base_color = ticket.display_color or config.colors.gradient_stage_color(0)
+
+    if ticket.due_date:
+        badge_label = f"Due {ticket.due_date.strftime('%b %d, %Y %H:%M')}"
+        badge_state = "overdue" if getattr(ticket, "is_overdue", False) else "scheduled"
+        badge_color = base_color
+    elif getattr(ticket, "sla_countdown", None):
+        badge_label = ticket.sla_countdown  # type: ignore[assignment]
+        badge_state = "sla-breached" if getattr(ticket, "sla_is_breached", False) else "sla-active"
+        badge_color = base_color
+    else:
+        badge_label = "No due date"
+        badge_state = "none"
+        badge_color = config.colors.gradient_stage_color(0)
+
+    ticket.due_badge_label = badge_label  # type: ignore[attr-defined]
+    ticket.due_badge_state = badge_state  # type: ignore[attr-defined]
+    ticket.due_badge_color = badge_color  # type: ignore[attr-defined]
 
 
 def _boost_overdue_rgb(red: int, green: int, blue: int) -> tuple[int, int, int]:
@@ -402,9 +440,15 @@ def list_tickets():
 
     tickets = query.all()
     now = datetime.utcnow()
+    status_palette = _build_status_palette(config)
     for ticket in tickets:
-        ticket.display_color = _compute_ticket_color(ticket, config)  # type: ignore[attr-defined]
+        ticket.display_color = _compute_ticket_color(ticket, config, status_palette)  # type: ignore[attr-defined]
+        ticket.status_color = (
+            _resolve_status_color(ticket.status, status_palette)
+            or ticket.display_color
+        )  # type: ignore[attr-defined]
         _annotate_ticket_sla(ticket, config, now)
+        _annotate_due_state(ticket, config)
 
     available_tags = Tag.query.order_by(Tag.name).all()
 
@@ -442,8 +486,14 @@ def ticket_detail(ticket_id: int):
     config = _app_config()
     ticket = Ticket.query.get_or_404(ticket_id)
     compact_mode = _is_compact_mode()
-    ticket.display_color = _compute_ticket_color(ticket, config)  # type: ignore[attr-defined]
+    status_palette = _build_status_palette(config)
+    ticket.display_color = _compute_ticket_color(ticket, config, status_palette)  # type: ignore[attr-defined]
+    ticket.status_color = (
+        _resolve_status_color(ticket.status, status_palette)
+        or ticket.display_color
+    )  # type: ignore[attr-defined]
     _annotate_ticket_sla(ticket, config)
+    _annotate_due_state(ticket, config)
     return render_template(
         "ticket_detail.html",
         ticket=ticket,
