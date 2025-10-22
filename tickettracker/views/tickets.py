@@ -316,18 +316,26 @@ def _is_compact_mode() -> bool:
 
     value = request.args.get("compact")
     if value is None:
+        return True
+
+    normalized = value.strip().lower()
+    if normalized in {"0", "false", "no", "off"}:
         return False
-    return value.lower() in {"1", "true", "yes", "on"}
+    if normalized in {"1", "true", "yes", "on"}:
+        return True
+    return True
+
+
+def _compact_query_value(compact_mode: bool) -> str:
+    return "1" if compact_mode else "0"
 
 
 def _build_compact_toggle_url(endpoint: str, compact_mode: bool, **values: object) -> str:
     """Return a URL that toggles the compact flag while preserving filters."""
 
     query_args: Dict[str, List[str]] = {key: list(items) for key, items in request.args.lists()}
-    if compact_mode:
-        query_args.pop("compact", None)
-    else:
-        query_args["compact"] = ["1"]
+    toggled_value = _compact_query_value(not compact_mode)
+    query_args["compact"] = [toggled_value]
 
     flattened: Dict[str, object] = {
         key: value if len(value) != 1 else value[0]
@@ -567,7 +575,7 @@ def create_ticket():
             url_for(
                 "tickets.ticket_detail",
                 ticket_id=ticket.id,
-                **({"compact": "1"} if compact_mode else {}),
+                compact=_compact_query_value(compact_mode),
             )
         )
 
@@ -625,7 +633,7 @@ def edit_ticket(ticket_id: int):
             url_for(
                 "tickets.ticket_detail",
                 ticket_id=ticket.id,
-                **({"compact": "1"} if compact_mode else {}),
+                compact=_compact_query_value(compact_mode),
             )
         )
 
@@ -682,7 +690,7 @@ def add_update(ticket_id: int):
         url_for(
             "tickets.ticket_detail",
             ticket_id=ticket.id,
-            **({"compact": "1"} if compact_mode else {}),
+            compact=_compact_query_value(compact_mode),
         )
     )
 
@@ -699,7 +707,7 @@ def download_attachment(attachment_id: int):
             url_for(
                 "tickets.ticket_detail",
                 ticket_id=attachment.ticket_id,
-                **({"compact": "1"} if compact_mode else {}),
+                compact=_compact_query_value(compact_mode),
             )
         )
 

@@ -4,14 +4,12 @@
 {% else %}
   {% set page_title = 'New Ticket' %}
 {% endif %}
-{% set is_compact = compact_mode|default(false) %}
+{% set is_compact = compact_mode|default(true) %}
+{% set compact_value = '1' if is_compact else '0' %}
 {% if ticket %}
-  {% set form_action = url_for('tickets.edit_ticket', ticket_id=ticket.id) %}
+  {% set form_action = url_for('tickets.edit_ticket', ticket_id=ticket.id, compact=compact_value) %}
 {% else %}
-  {% set form_action = url_for('tickets.create_ticket') %}
-{% endif %}
-{% if is_compact %}
-  {% set form_action = form_action ~ '?compact=1' %}
+  {% set form_action = url_for('tickets.create_ticket', compact=compact_value) %}
 {% endif %}
 {% block title %}{{ page_title }} · TicketTracker{% endblock %}
 {% block content %}
@@ -86,7 +84,7 @@
     </div>
     <div class="actions">
       <button type="submit" class="button primary">Save</button>
-      <a class="button" href="{{ url_for('tickets.list_tickets') }}{% if is_compact %}?compact=1{% endif %}">Cancel</a>
+      <a class="button" href="{{ url_for('tickets.list_tickets', compact=compact_value) }}">Cancel</a>
     </div>
   </form>
 </section>
