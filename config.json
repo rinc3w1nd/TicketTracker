@@ -15,20 +15,21 @@
   ],
   "workflow": ["Open", "In Progress", "On Hold", "Resolved", "Closed", "Cancelled"],
   "sla": {
-    "due_soon_hours": 24,
-    "overdue_grace_minutes": 30,
-    "priority_open_days": {
-      "Low": 7,
-      "Medium": 5,
-      "High": 3,
-      "Critical": 1
+    "due_stage_days": [28, 21, 14, 7],
+    "priority_stage_days": {
+      "Low": [14, 21, 28, 35],
+      "Medium": [10, 15, 20, 25],
+      "High": [5, 7, 10, 14],
+      "Critical": [2, 3, 5, 7]
     }
   },
   "colors": {
     "gradient": {
-      "safe": "#38bdf8",
-      "warning": "#facc15",
-      "overdue": "#f87171"
+      "stage0": "#bae6fd",
+      "stage1": "#fde047",
+      "stage2": "#fb923c",
+      "stage3": "#ef4444",
+      "overdue": "#7f1d1d"
     },
     "statuses": {
       "on_hold": "#9c88ff",
