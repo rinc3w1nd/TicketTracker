@@ -83,6 +83,10 @@ Runtime behaviour is driven by `config.json` in the project root. The file contr
 - palette overrides for statuses, priorities, and tag chips
 - Flask session secret (`secret_key`). For production deployments set the `TICKETTRACKER_SECRET_KEY` environment variable to override the value stored in the JSON file.
 
+SLA configuration now works in stages. For due dates, the `sla.due_stage_days` list expresses the day thresholds (defaults: 28/21/14/7) that map to the gradient stages. Tickets transition from stage 0 when they are far from the due date through stages 1–3 as they approach it, and finally to the `overdue` colour once the due date passes. Backlog items without due dates use `sla.priority_stage_days`, where each priority has an array of ascending day limits; once a ticket ages beyond the final value it is treated as overdue.
+
+The gradient palette exposes five keys—`stage0`, `stage1`, `stage2`, `stage3`, and `overdue`. By default the colours flow from a light blue baseline through yellow and orange to red and finally crimson for overdue tickets. Custom configurations may omit individual entries; any missing colours fall back to the defaults above.
+
 You can provide a different configuration by setting `TICKETTRACKER_CONFIG` to an alternate JSON file path before starting the app.
 
 ### Running the development server

@@ -1,9 +1,9 @@
 """Ticket management views."""
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from typing import Iterable, List
+from typing import Dict, Iterable, List
 
 from flask import (
     Blueprint,
@@ -42,42 +42,45 @@ def _parse_datetime(value: str | None) -> datetime | None:
 
 
 def _compute_ticket_color(ticket: Ticket, config: AppConfig) -> str:
-    status_palette = {key.lower(): value for key, value in config.colors.statuses.items()}
-    gradient = config.colors.gradient or {}
+    status_palette: Dict[str, str] = {}
+    for key, value in config.colors.statuses.items():
+        lowered = (key or "").lower()
+        if not lowered:
+            continue
+        status_palette[lowered] = value
+        status_palette[lowered.replace(" ", "_")] = value
+
     now = datetime.utcnow()
     status_lower = (ticket.status or "").lower()
+    status_color = status_palette.get(status_lower) or status_palette.get(status_lower.replace(" ", "_"))
+    if status_color:
+        return status_color
 
-    if status_lower == "on hold" and status_palette.get("on_hold"):
-        return status_palette["on_hold"]
-    if status_lower == "resolved" and status_palette.get("resolved"):
-        return status_palette["resolved"]
-    if status_lower == "closed" and status_palette.get("closed"):
-        return status_palette["closed"]
-    if status_lower == "cancelled" and status_palette.get("cancelled"):
-        return status_palette["cancelled"]
-
-    safe_color = gradient.get("safe", "#1e90ff")
-    warning_color = gradient.get("warning", "#ffa502")
-    overdue_color = gradient.get("overdue", "#ff4757")
+    overdue_color = config.colors.gradient_overdue_color()
 
     if ticket.due_date:
-        delta = ticket.due_date - now
-        overdue_threshold = timedelta(minutes=config.sla.overdue_grace_minutes)
-        due_soon_threshold = timedelta(hours=config.sla.due_soon_hours)
-        if delta < -overdue_threshold:
+        seconds_remaining = (ticket.due_date - now).total_seconds()
+        if seconds_remaining <= 0:
             return overdue_color
-        if delta <= due_soon_threshold:
-            return warning_color
-        return safe_color
+        days_remaining = seconds_remaining / 86400
+        thresholds = config.sla.due_thresholds()
+        if not thresholds:
+            return config.colors.gradient_stage_color(0)
+        for index, threshold in enumerate(thresholds):
+            if days_remaining > threshold:
+                return config.colors.gradient_stage_color(index)
+        return config.colors.gradient_stage_color(len(thresholds) - 1)
 
-    # When no due date exists, fall back to age compared to priority thresholds.
-    open_days = (now - ticket.created_at).total_seconds() / 86400
-    allowed_days = config.sla.priority_open_days.get(ticket.priority, 5)
-    if open_days > allowed_days:
-        return overdue_color
-    if open_days > allowed_days * 0.6:
-        return warning_color
-    return safe_color
+    open_days = max(0.0, (now - ticket.created_at).total_seconds() / 86400)
+    thresholds = config.sla.priority_thresholds(ticket.priority or "")
+    if thresholds:
+        for index, threshold in enumerate(thresholds):
+            if open_days <= threshold:
+                return config.colors.gradient_stage_color(index)
+    else:
+        return config.colors.gradient_stage_color(0)
+
+    return overdue_color
 
 
 def _parse_tags(raw_tags: str | None) -> List[str]:
