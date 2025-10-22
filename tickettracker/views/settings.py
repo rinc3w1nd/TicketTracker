@@ -15,6 +15,7 @@ from flask import (
 )
 
 from ..config import AppConfig, save_config
+from ..demo import DemoModeError, get_demo_manager
 
 
 settings_bp = Blueprint("settings", __name__)
@@ -22,6 +23,21 @@ settings_bp = Blueprint("settings", __name__)
 
 def _app_config() -> AppConfig:
     return current_app.config["APP_CONFIG"]
+
+
+def _persist_config(updated_config: AppConfig) -> bool:
+    try:
+        save_config(updated_config)
+    except ValueError:
+        flash(
+            "Unable to determine configuration file path; changes were not saved.",
+            "error",
+        )
+        return False
+
+    current_app.config["APP_CONFIG"] = updated_config
+    current_app.config["DEMO_MODE"] = updated_config.demo_mode
+    return True
 
 
 def _is_compact_mode() -> bool:
@@ -92,6 +108,7 @@ def _form_defaults(config: AppConfig) -> Dict[str, object]:
 @settings_bp.route("/settings", methods=["GET", "POST"])
 def view_settings():
     config = _app_config()
+    demo_manager = get_demo_manager(current_app)
     compact_mode = _is_compact_mode()
 
     form_data = _form_defaults(config)
@@ -153,6 +170,9 @@ def view_settings():
         else:
             updates_limit = config.clipboard_summary.updates_limit
 
+        should_enable_demo = demo_mode_enabled and not config.demo_mode
+        should_disable_demo = not demo_mode_enabled and config.demo_mode
+
         if errors:
             for message in errors:
                 flash(message, "error")
@@ -174,30 +194,126 @@ def view_settings():
                 demo_mode=demo_mode_enabled,
             )
 
-            try:
-                save_config(updated_config)
-            except ValueError:
-                flash(
-                    "Unable to determine configuration file path; changes were not saved.",
-                    "error",
-                )
+            toggle_error = False
+            if should_enable_demo:
+                try:
+                    demo_manager.enable()
+                except DemoModeError as exc:
+                    flash(f"Unable to enable demo mode: {exc}", "error")
+                    toggle_error = True
+            elif should_disable_demo:
+                try:
+                    demo_manager.disable()
+                except DemoModeError as exc:
+                    flash(f"Unable to disable demo mode: {exc}", "error")
+                    toggle_error = True
+
+            if toggle_error:
+                flash("Demo mode change failed; settings were not saved.", "error")
             else:
-                current_app.config["APP_CONFIG"] = updated_config
-                current_app.config["DEMO_MODE"] = updated_config.demo_mode
-                flash("Settings updated", "success")
-                return redirect(
-                    url_for(
-                        "settings.view_settings",
-                        compact=_compact_query_value(compact_mode),
+                if _persist_config(updated_config):
+                    flash("Settings updated", "success")
+                    return redirect(
+                        url_for(
+                            "settings.view_settings",
+                            compact=_compact_query_value(compact_mode),
+                        )
                     )
-                )
+
+                if should_enable_demo:
+                    try:
+                        demo_manager.disable()
+                    except DemoModeError as exc:  # pragma: no cover - log safeguard
+                        current_app.logger.warning(
+                            "Unable to revert demo mode after save failure: %s", exc
+                        )
+                elif should_disable_demo:
+                    try:
+                        demo_manager.enable()
+                    except DemoModeError as exc:  # pragma: no cover - log safeguard
+                        current_app.logger.warning(
+                            "Unable to restore demo mode after save failure: %s", exc
+                        )
+
+    demo_status = demo_manager.status()
 
     return render_template(
         "settings.html",
         config=config,
         form=form_data,
+        demo_status=demo_status,
         compact_mode=compact_mode,
         compact_toggle_url=_build_compact_toggle_url(
             "settings.view_settings", compact_mode
         ),
+    )
+
+
+@settings_bp.post("/settings/demo-mode")
+def toggle_demo_mode():
+    config = _app_config()
+    demo_manager = get_demo_manager(current_app)
+    action = (request.form.get("action") or "").strip().lower()
+    compact_mode = _is_compact_mode()
+
+    if action == "enable":
+        try:
+            demo_manager.enable()
+        except DemoModeError as exc:
+            flash(f"Unable to enable demo mode: {exc}", "error")
+        else:
+            if not config.demo_mode:
+                updated_config = replace(config, demo_mode=True)
+                if _persist_config(updated_config):
+                    flash(
+                        "Demo mode enabled. Sample data loaded and live data snapshotted.",
+                        "success",
+                    )
+                    config = updated_config
+                else:
+                    try:
+                        demo_manager.disable()
+                    except DemoModeError as revert_exc:  # pragma: no cover - safety log
+                        current_app.logger.warning(
+                            "Unable to revert demo mode after failed persistence: %s",
+                            revert_exc,
+                        )
+            else:
+                flash("Demo mode dataset loaded.", "success")
+    elif action == "disable":
+        try:
+            demo_manager.disable()
+        except DemoModeError as exc:
+            flash(f"Unable to disable demo mode: {exc}", "error")
+        else:
+            if config.demo_mode:
+                updated_config = replace(config, demo_mode=False)
+                if _persist_config(updated_config):
+                    flash("Demo mode disabled. Original data restored.", "success")
+                    config = updated_config
+                else:
+                    try:
+                        demo_manager.enable()
+                    except DemoModeError as revert_exc:  # pragma: no cover - safety log
+                        current_app.logger.warning(
+                            "Unable to re-enable demo mode after save failure: %s",
+                            revert_exc,
+                        )
+            else:
+                flash("Demo mode disabled.", "success")
+    elif action == "refresh":
+        try:
+            demo_manager.refresh()
+        except DemoModeError as exc:
+            flash(f"Unable to refresh demo data: {exc}", "error")
+        else:
+            flash("Demo data refreshed.", "success")
+    else:
+        flash("Unrecognized demo mode action.", "error")
+
+    return redirect(
+        url_for(
+            "settings.view_settings",
+            compact=_compact_query_value(compact_mode),
+        )
     )

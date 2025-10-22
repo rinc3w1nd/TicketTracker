@@ -112,4 +112,62 @@
       </div>
     </form>
   </section>
+
+  <section class="panel settings-panel">
+    <h2>Demo mode controls</h2>
+    <p class="help">
+      Enable demo mode to explore TicketTracker with curated sample data. The current
+      database and uploads are snapshotted and will be restored automatically when demo
+      mode is disabled.
+    </p>
+
+    <dl class="status-list">
+      <div class="status-item">
+        <dt>Status</dt>
+        <dd>
+          {% if demo_status.active %}
+            Active{% if demo_status.last_loaded_at %} (last loaded {{ demo_status.last_loaded_at }}){% endif %}
+          {% else %}
+            Disabled
+          {% endif %}
+        </dd>
+      </div>
+      <div class="status-item">
+        <dt>Dataset</dt>
+        <dd><code>{{ demo_status.dataset }}</code></dd>
+      </div>
+    </dl>
+
+    <div class="actions demo-mode-actions">
+      <form
+        method="post"
+        action="{{ url_for('settings.toggle_demo_mode', compact=compact_value) }}"
+      >
+        <input type="hidden" name="action" value="enable" />
+        <button type="submit" class="button primary" {% if demo_status.active %}disabled{% endif %}>
+          Enable demo mode
+        </button>
+      </form>
+
+      <form
+        method="post"
+        action="{{ url_for('settings.toggle_demo_mode', compact=compact_value) }}"
+      >
+        <input type="hidden" name="action" value="disable" />
+        <button type="submit" class="button" {% if not demo_status.active %}disabled{% endif %}>
+          Disable demo mode
+        </button>
+      </form>
+
+      <form
+        method="post"
+        action="{{ url_for('settings.toggle_demo_mode', compact=compact_value) }}"
+      >
+        <input type="hidden" name="action" value="refresh" />
+        <button type="submit" class="button" {% if not demo_status.active %}disabled{% endif %}>
+          Refresh demo data
+        </button>
+      </form>
+    </div>
+  </section>
 {% endblock %}

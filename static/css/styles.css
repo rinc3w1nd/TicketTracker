@@ -441,6 +441,52 @@ body.compact .app-footer {
   box-shadow: 0 20px 45px rgba(15, 23, 42, 0.35);
 }
 
+.status-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+  margin: 1.25rem 0 1.5rem;
+  padding: 0;
+}
+
+.status-item {
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 1rem;
+  padding: 0.85rem 1.1rem;
+}
+
+.status-item dt {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 0.3rem;
+}
+
+.status-item dd {
+  margin: 0;
+  color: #f8fafc;
+  font-weight: 500;
+  word-break: break-word;
+}
+
+.demo-mode-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.demo-mode-actions form {
+  margin: 0;
+}
+
+.demo-mode-actions .button[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .filter-form,
 .ticket-form,
 .update-form {

@@ -1,0 +1,186 @@
+{
+  "metadata": {
+    "description": "Comprehensive demo dataset covering escalations, holds, resolutions, and backlog scenarios.",
+    "generated_at": "2024-03-01T12:00:00+00:00"
+  },
+  "tags": [
+    {"name": "Incident", "color": "#dc2626"},
+    {"name": "Billing", "color": "#1d4ed8"},
+    {"name": "Infrastructure", "color": "#0ea5e9"},
+    {"name": "Customer", "color": "#f97316"},
+    {"name": "Onboarding", "color": "#22c55e"},
+    {"name": "SLA", "color": "#7c3aed"}
+  ],
+  "tickets": [
+    {
+      "title": "Gateway outage affecting checkout",
+      "description": "Customers cannot complete purchases through the hosted checkout form. Monitoring detected sustained 5xx responses coming from the payment gateway. Incident channel engaged and communications sent to stakeholders.",
+      "requester": "Monique Wallace",
+      "watchers": ["Payments Squad", "Incident Commander"],
+      "priority": "Critical",
+      "status": "In Progress",
+      "due_date": "2024-01-10T09:30:00+00:00",
+      "notes": "Temporary fix deployed; monitoring latency spikes.",
+      "links": [
+        "https://status.example.com/incidents/checkout-gateway"
+      ],
+      "tags": ["Incident", "SLA", "Infrastructure"],
+      "created_at": "2024-01-08T13:15:00+00:00",
+      "updated_at": "2024-01-09T10:22:00+00:00",
+      "updates": [
+        {
+          "body": "Initial alert triggered when error budget consumed for gateway latency.",
+          "author": "Incident Bot",
+          "created_at": "2024-01-08T13:20:00+00:00",
+          "status_from": "Open",
+          "status_to": "Investigating",
+          "is_system": true
+        },
+        {
+          "body": "Failover to secondary region initiated to restore service.",
+          "author": "Nikhil Shah",
+          "created_at": "2024-01-08T13:45:00+00:00",
+          "status_from": "Investigating",
+          "status_to": "In Progress",
+          "attachments": [
+            {
+              "original_filename": "failover-plan.txt",
+              "stored_filename": "demo/failover-plan.txt",
+              "mimetype": "text/plain",
+              "size": 542,
+              "content": "Checklist of steps executed during failover."
+            }
+          ]
+        },
+        {
+          "body": "Gateway recovered but latency elevated; continuing to monitor.",
+          "author": "Nikhil Shah",
+          "created_at": "2024-01-09T09:10:00+00:00"
+        }
+      ],
+      "attachments": [
+        {
+          "original_filename": "error-spike.png",
+          "stored_filename": "demo/error-spike.png",
+          "mimetype": "image/png",
+          "size": 20480,
+          "content": "Binary image placeholder"
+        }
+      ]
+    },
+    {
+      "title": "Refund workflow paused for audit",
+      "description": "Finance requested a pause on refund processing while auditors review the workflow. Customers with pending refunds must be tracked manually until the audit completes.",
+      "requester": "Finance Operations",
+      "watchers": "auditors@example.com, finance-lead@example.com",
+      "priority": "High",
+      "status": "On Hold",
+      "due_date": "2024-01-20T12:00:00+00:00",
+      "on_hold_reason": "Pending scheduled work",
+      "tags": ["Billing", "Customer"],
+      "created_at": "2023-12-15T09:00:00+00:00",
+      "updates": [
+        {
+          "body": "Finance requested hold pending completion of compliance questionnaire.",
+          "author": "Jordan Evans",
+          "created_at": "2023-12-15T11:30:00+00:00",
+          "status_from": "In Progress",
+          "status_to": "On Hold"
+        },
+        {
+          "body": "Customer outreach list compiled for manual refund tracking.",
+          "author": "Jordan Evans",
+          "created_at": "2023-12-16T08:15:00+00:00"
+        }
+      ]
+    },
+    {
+      "title": "Automated welcome email duplicates",
+      "description": "New customers are receiving the welcome email twice when signing up during peak hours. Investigation shows a race condition between CRM and marketing automation triggers.",
+      "requester": "CX Insights",
+      "priority": "Medium",
+      "status": "Resolved",
+      "due_date": "2024-02-01T17:00:00+00:00",
+      "tags": ["Onboarding", "Customer"],
+      "created_at": "2024-01-03T10:05:00+00:00",
+      "updates": [
+        {
+          "body": "Reproduced duplicate emails during traffic burst in staging.",
+          "author": "Priya Patel",
+          "created_at": "2024-01-03T14:42:00+00:00"
+        },
+        {
+          "body": "Disabled redundant trigger in CRM, monitoring queue length.",
+          "author": "Priya Patel",
+          "created_at": "2024-01-04T09:20:00+00:00",
+          "status_from": "In Progress",
+          "status_to": "Resolved",
+          "attachments": [
+            {
+              "original_filename": "trigger-diff.png",
+              "stored_filename": "demo/trigger-diff.png",
+              "mimetype": "image/png",
+              "size": 10312,
+              "content": "Annotated screenshot of CRM trigger configuration."
+            }
+          ]
+        }
+      ],
+      "attachments": [
+        {
+          "original_filename": "duplicate-report.csv",
+          "stored_filename": "demo/duplicate-report.csv",
+          "mimetype": "text/csv",
+          "size": 3187,
+          "content": "timestamp,email,count\n2024-01-03T09:00:00Z,test@example.com,2"
+        }
+      ]
+    },
+    {
+      "title": "Feature request: dark mode for admin dashboard",
+      "description": "Multiple admins requested a dark mode toggle for accessibility reasons. Gather requirements and provide design mocks for review.",
+      "requester": "Product Feedback",
+      "priority": "Low",
+      "status": "Open",
+      "tags": ["Customer"],
+      "age_reference_date": "2023-11-10",
+      "created_at": "2023-11-12T15:40:00+00:00",
+      "updates": [
+        {
+          "body": "Compiled examples from other dashboards to inform design direction.",
+          "author": "Alex Rivera",
+          "created_at": "2023-11-18T12:05:00+00:00"
+        }
+      ]
+    },
+    {
+      "title": "Legacy backup job cleanup",
+      "description": "Decommission backup job left over from the data center migration. Ensure snapshots are archived before removal.",
+      "requester": "Infrastructure",
+      "priority": "High",
+      "status": "Closed",
+      "notes": "Job retired after migration; audit trail saved to storage.",
+      "links": [
+        "https://docs.example.com/backup-cleanup",
+        "https://internal.example.com/task/123"
+      ],
+      "tags": ["Infrastructure", "SLA"],
+      "created_at": "2023-10-02T07:10:00+00:00",
+      "updated_at": "2023-10-05T16:30:00+00:00",
+      "updates": [
+        {
+          "body": "Archived final snapshot to cold storage.",
+          "author": "Morgan Reed",
+          "created_at": "2023-10-04T18:15:00+00:00"
+        },
+        {
+          "body": "Disabled legacy cron job and confirmed cleanup.",
+          "author": "Morgan Reed",
+          "created_at": "2023-10-05T16:30:00+00:00",
+          "status_from": "In Progress",
+          "status_to": "Closed"
+        }
+      ]
+    }
+  ]
+}

@@ -98,6 +98,18 @@ The command creates the SQLite database (if missing), ensures the uploads direct
 
 Uploaded attachments are stored locally under the directory defined in the JSON configuration (defaults to `uploads/`). Backing up the database file and uploads folder is sufficient to preserve all data.
 
+### Demo mode and sample data
+
+TicketTracker ships with a comprehensive demo dataset (`tickettracker/demo_data/demo_tickets.json`) that exercises overdue, on-hold, resolved, and backlog scenarios with associated updates, tags, and attachments. Operators can enable demo mode from the **Settings → Demo mode controls** panel or via the CLI:
+
+```bash
+python -m tickettracker.cli demo enable        # load demo data and snapshot live state
+python -m tickettracker.cli demo refresh      # discard demo changes and reload the dataset
+python -m tickettracker.cli demo disable      # restore the original database and uploads
+```
+
+Enabling demo mode snapshots the current SQLite database and uploads directory inside the application instance path, replaces them with the curated demo dataset, and ensures all temporary changes are discarded when demo mode is disabled. The settings UI surfaces enable/disable/refresh buttons and shows when the dataset was last loaded so you can safely demonstrate features without risking production data.
+
 ### Workflow highlights
 - Tickets can be created, edited, filtered, and searched from the dashboard.
 - Status transitions automatically create audit-log entries on the ticket timeline.

@@ -7,6 +7,7 @@ from typing import Optional
 from flask import Flask, current_app
 
 from .config import AppConfig, load_config
+from .demo import DemoModeError, get_demo_manager
 from .extensions import db
 from .migrations import run_migrations
 
@@ -43,6 +44,18 @@ def create_app(config_path: Optional[str | Path] = None) -> Flask:
 
         db.create_all()
         run_migrations()
+
+        demo_manager = get_demo_manager(app)
+        if app_config.demo_mode:
+            try:
+                demo_manager.enable()
+            except DemoModeError as exc:
+                app.logger.warning("Unable to enable demo mode during startup: %s", exc)
+        elif demo_manager.is_active:
+            try:
+                demo_manager.disable()
+            except DemoModeError as exc:  # pragma: no cover - defensive logging
+                app.logger.warning("Unable to restore data when disabling demo mode: %s", exc)
 
     from .views.settings import settings_bp
     from .views.tickets import tickets_bp
