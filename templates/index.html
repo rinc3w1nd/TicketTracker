@@ -1,8 +1,12 @@
 {% extends "base.html" %}
 {% block title %}Tickets · TicketTracker{% endblock %}
 {% block content %}
+{% set is_compact = compact_mode|default(false) %}
 <section class="panel">
   <form method="get" class="filter-form" data-filter-form>
+    {% if is_compact %}
+      <input type="hidden" name="compact" value="1" />
+    {% endif %}
     <div class="filter-toolbar">
       <details
         class="filter-collapsible"
@@ -88,7 +92,7 @@
     </div>
     <div class="actions">
       <button type="submit" class="button primary">Apply</button>
-      <a href="{{ url_for('tickets.list_tickets') }}" class="button">Reset</a>
+      <a href="{{ url_for('tickets.list_tickets') }}{% if is_compact %}?compact=1{% endif %}" class="button">Reset</a>
     </div>
   </form>
 </section>
@@ -99,7 +103,11 @@
       <article class="ticket-card" style="--ticket-accent: {{ ticket.display_color }}; --ticket-tint: {{ ticket.tint_color }};">
         <header>
           <div class="title-group">
-            <h2><a href="{{ url_for('tickets.ticket_detail', ticket_id=ticket.id) }}">{{ ticket.title }}</a></h2>
+            <h2>
+              <a href="{{ url_for('tickets.ticket_detail', ticket_id=ticket.id) }}{% if is_compact %}?compact=1{% endif %}">
+                {{ ticket.title }}
+              </a>
+            </h2>
             <div class="meta">
               <span class="status">{{ ticket.status }}{% if ticket.status == 'On Hold' and ticket.on_hold_reason %} · {{ ticket.on_hold_reason }}{% endif %}</span>
               {% set priority_color = config.colors.priorities.get(ticket.priority, '#3b82f6') %}
@@ -160,7 +168,10 @@
     {% endfor %}
   {% else %}
     <div class="empty-state">
-      <p>No tickets found. <a href="{{ url_for('tickets.create_ticket') }}">Create your first ticket.</a></p>
+      <p>
+        No tickets found.
+        <a href="{{ url_for('tickets.create_ticket') }}{% if is_compact %}?compact=1{% endif %}">Create your first ticket.</a>
+      </p>
     </div>
   {% endif %}
 </section>
