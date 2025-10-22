@@ -12,7 +12,8 @@
       rel="stylesheet"
     />
   </head>
-  <body>
+  {% set is_compact = compact_mode|default(false) %}
+  <body class="{% if is_compact %}compact{% endif %}">
     <header class="app-header">
       <div class="brand">
         <span class="logo">🎫</span>
@@ -22,8 +23,21 @@
         </div>
       </div>
       <nav class="nav-links">
-        <a href="{{ url_for('tickets.list_tickets') }}">Tickets</a>
-        <a href="{{ url_for('tickets.create_ticket') }}" class="button primary">New Ticket</a>
+        <a href="{{ url_for('tickets.list_tickets', compact='1') if is_compact else url_for('tickets.list_tickets') }}">Tickets</a>
+        <a
+          href="{{ url_for('tickets.create_ticket', compact='1') if is_compact else url_for('tickets.create_ticket') }}"
+          class="button primary"
+        >
+          New Ticket
+        </a>
+        <a
+          href="{{ compact_toggle_url|default(request.url) }}"
+          class="button toggle-compact"
+          role="switch"
+          aria-checked="{{ 'true' if is_compact else 'false' }}"
+        >
+          {% if is_compact %}Standard layout{% else %}Compact layout{% endif %}
+        </a>
       </nav>
     </header>
 

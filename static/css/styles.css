@@ -102,6 +102,211 @@ a:hover {
   flex: 1;
 }
 
+.nav-links .toggle-compact {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Compact mode adjustments */
+body.compact {
+  font-size: 0.95rem;
+}
+
+body.compact .app-header {
+  padding: 1.1rem 4vw;
+}
+
+body.compact .brand .logo {
+  font-size: 1.6rem;
+}
+
+body.compact .nav-links {
+  gap: 0.75rem;
+}
+
+body.compact .button {
+  padding: 0.5rem 1rem;
+  border-radius: 0.65rem;
+}
+
+body.compact .nav-links .button {
+  padding: 0.45rem 0.95rem;
+}
+
+body.compact .nav-links .button.primary {
+  padding: 0.45rem 1.05rem;
+}
+
+body.compact .content {
+  width: min(1024px, 95vw);
+  margin: 1.5rem auto 3rem;
+}
+
+body.compact .panel {
+  padding: 1.25rem;
+  border-radius: 1.35rem;
+  margin-bottom: 1.5rem;
+}
+
+body.compact .filter-form,
+body.compact .ticket-form,
+body.compact .update-form {
+  gap: 0.9rem;
+}
+
+body.compact .filter-toolbar {
+  gap: 1rem;
+}
+
+body.compact .filter-collapsible {
+  padding: 0.75rem 0.95rem;
+  border-radius: 0.9rem;
+}
+
+body.compact .filter-fields {
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+body.compact .sort-controls {
+  gap: 0.45rem;
+}
+
+body.compact .sort-button-group {
+  gap: 0.4rem;
+}
+
+body.compact .sort-button {
+  padding: 0.45rem 0.75rem;
+  border-radius: 0.65rem;
+}
+
+body.compact .field-group {
+  gap: 0.4rem;
+}
+
+body.compact .field-group label {
+  font-size: 0.8rem;
+}
+
+body.compact .field-group input,
+body.compact .field-group textarea,
+body.compact .field-group select {
+  padding: 0.65rem 0.9rem;
+  border-radius: 0.65rem;
+}
+
+body.compact .field-group.split {
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+body.compact .tag-mode {
+  gap: 0.75rem;
+  font-size: 0.8rem;
+}
+
+body.compact .actions {
+  gap: 0.6rem;
+}
+
+body.compact .ticket-grid {
+  gap: 1rem;
+}
+
+body.compact .ticket-card {
+  padding: 1.1rem;
+  border-radius: 1.25rem;
+}
+
+body.compact .ticket-card header,
+body.compact .ticket-detail > header {
+  gap: 1rem;
+}
+
+body.compact .ticket-card .description {
+  margin-top: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+body.compact .ticket-details {
+  gap: 0.75rem;
+}
+
+body.compact .ticket-details div {
+  padding: 0.6rem;
+  border-radius: 0.65rem;
+}
+
+body.compact .tags {
+  gap: 0.4rem;
+}
+
+body.compact .tags li {
+  padding: 0.3rem 0.55rem;
+  font-size: 0.7rem;
+}
+
+body.compact .ticket-card footer {
+  margin-top: 1rem;
+  font-size: 0.75rem;
+}
+
+body.compact .ticket-detail {
+  padding: 1.6rem;
+  border-radius: 1.5rem;
+  margin-bottom: 1.75rem;
+}
+
+body.compact .detail-grid {
+  gap: 1.5rem;
+}
+
+body.compact .detail-grid aside dl {
+  gap: 0.75rem;
+}
+
+body.compact .timeline {
+  margin: 1.5rem 0 0;
+}
+
+body.compact .timeline li {
+  padding-left: 2.25rem;
+  margin-bottom: 1.3rem;
+}
+
+body.compact .timeline-content {
+  padding: 0.85rem;
+  border-radius: 0.9rem;
+}
+
+body.compact .update-meta {
+  gap: 0.4rem 0.75rem;
+  font-size: 0.75rem;
+}
+
+body.compact .empty-state,
+body.compact .timeline li.empty,
+body.compact .attachments .empty {
+  padding: 1.5rem;
+}
+
+body.compact .flash-container {
+  gap: 0.6rem;
+  margin-bottom: 1.25rem;
+}
+
+body.compact .flash {
+  padding: 0.7rem 1rem;
+  border-radius: 0.75rem;
+}
+
+body.compact .app-footer {
+  padding: 1.5rem 4vw;
+  font-size: 0.8rem;
+}
+
 .button {
   display: inline-flex;
   align-items: center;

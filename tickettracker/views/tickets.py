@@ -108,6 +108,31 @@ def _compute_ticket_tint(color: str, intensity: float = 0.25) -> str:
     return f"color-mix(in srgb, {color} {percent}%, transparent)"
 
 
+def _is_compact_mode() -> bool:
+    """Return ``True`` when the current request asks for compact mode."""
+
+    value = request.args.get("compact")
+    if value is None:
+        return False
+    return value.lower() in {"1", "true", "yes", "on"}
+
+
+def _build_compact_toggle_url(endpoint: str, compact_mode: bool, **values: object) -> str:
+    """Return a URL that toggles the compact flag while preserving filters."""
+
+    query_args: Dict[str, List[str]] = {key: list(items) for key, items in request.args.lists()}
+    if compact_mode:
+        query_args.pop("compact", None)
+    else:
+        query_args["compact"] = ["1"]
+
+    flattened: Dict[str, object] = {
+        key: value if len(value) != 1 else value[0]
+        for key, value in query_args.items()
+    }
+    return url_for(endpoint, **values, **flattened)
+
+
 def _parse_tags(raw_tags: str | None) -> List[str]:
     if not raw_tags:
         return []
@@ -149,6 +174,8 @@ def _store_attachments(
 def list_tickets():
     config = _app_config()
     query = Ticket.query
+
+    compact_mode = _is_compact_mode()
 
     status_filter = request.args.get("status")
     if status_filter:
@@ -239,6 +266,10 @@ def list_tickets():
         config=config,
         available_tags=available_tags,
         priorities=config.priorities,
+        compact_mode=compact_mode,
+        compact_toggle_url=_build_compact_toggle_url(
+            "tickets.list_tickets", compact_mode
+        ),
         filters={
             "status": status_filter,
             "priority": priority_filter,
@@ -262,6 +293,7 @@ def list_tickets():
 def ticket_detail(ticket_id: int):
     config = _app_config()
     ticket = Ticket.query.get_or_404(ticket_id)
+    compact_mode = _is_compact_mode()
     ticket.display_color = _compute_ticket_color(ticket, config)  # type: ignore[attr-defined]
     ticket.tint_color = _compute_ticket_tint(ticket.display_color)  # type: ignore[attr-defined]
     return render_template(
@@ -270,12 +302,17 @@ def ticket_detail(ticket_id: int):
         config=config,
         priorities=config.priorities,
         hold_reasons=config.hold_reasons,
+        compact_mode=compact_mode,
+        compact_toggle_url=_build_compact_toggle_url(
+            "tickets.ticket_detail", compact_mode, ticket_id=ticket.id
+        ),
     )
 
 
 @tickets_bp.route("/tickets/new", methods=["GET", "POST"])
 def create_ticket():
     config = _app_config()
+    compact_mode = _is_compact_mode()
     if request.method == "POST":
         title = request.form.get("title", "").strip()
         description = request.form.get("description", "").strip()
@@ -306,7 +343,13 @@ def create_ticket():
 
         db.session.commit()
         flash("Ticket created", "success")
-        return redirect(url_for("tickets.ticket_detail", ticket_id=ticket.id))
+        return redirect(
+            url_for(
+                "tickets.ticket_detail",
+                ticket_id=ticket.id,
+                **({"compact": "1"} if compact_mode else {}),
+            )
+        )
 
     return render_template(
         "ticket_form.html",
@@ -315,6 +358,10 @@ def create_ticket():
         priorities=config.priorities,
         workflow=config.workflow,
         hold_reasons=config.hold_reasons,
+        compact_mode=compact_mode,
+        compact_toggle_url=_build_compact_toggle_url(
+            "tickets.create_ticket", compact_mode
+        ),
     )
 
 
@@ -322,6 +369,7 @@ def create_ticket():
 def edit_ticket(ticket_id: int):
     config = _app_config()
     ticket = Ticket.query.get_or_404(ticket_id)
+    compact_mode = _is_compact_mode()
 
     if request.method == "POST":
         previous_status = ticket.status
@@ -353,7 +401,13 @@ def edit_ticket(ticket_id: int):
         _store_attachments(request.files.getlist("attachments"), ticket)
         db.session.commit()
         flash("Ticket updated", "success")
-        return redirect(url_for("tickets.ticket_detail", ticket_id=ticket.id))
+        return redirect(
+            url_for(
+                "tickets.ticket_detail",
+                ticket_id=ticket.id,
+                **({"compact": "1"} if compact_mode else {}),
+            )
+        )
 
     return render_template(
         "ticket_form.html",
@@ -362,6 +416,10 @@ def edit_ticket(ticket_id: int):
         priorities=config.priorities,
         workflow=config.workflow,
         hold_reasons=config.hold_reasons,
+        compact_mode=compact_mode,
+        compact_toggle_url=_build_compact_toggle_url(
+            "tickets.edit_ticket", compact_mode, ticket_id=ticket.id
+        ),
     )
 
 
@@ -369,6 +427,7 @@ def edit_ticket(ticket_id: int):
 def add_update(ticket_id: int):
     config = _app_config()
     ticket = Ticket.query.get_or_404(ticket_id)
+    compact_mode = _is_compact_mode()
 
     message = request.form.get("message", "").strip()
     author = request.form.get("author") or None
@@ -395,7 +454,13 @@ def add_update(ticket_id: int):
 
     db.session.commit()
     flash("Update added", "success")
-    return redirect(url_for("tickets.ticket_detail", ticket_id=ticket.id))
+    return redirect(
+        url_for(
+            "tickets.ticket_detail",
+            ticket_id=ticket.id,
+            **({"compact": "1"} if compact_mode else {}),
+        )
+    )
 
 
 @tickets_bp.route("/attachments/<int:attachment_id>")
@@ -403,9 +468,16 @@ def download_attachment(attachment_id: int):
     attachment = Attachment.query.get_or_404(attachment_id)
     upload_root = Path(current_app.config["UPLOAD_FOLDER"])
     file_path = upload_root / attachment.stored_filename
+    compact_mode = _is_compact_mode()
     if not file_path.exists():
         flash("Attachment no longer exists on disk.", "error")
-        return redirect(url_for("tickets.ticket_detail", ticket_id=attachment.ticket_id))
+        return redirect(
+            url_for(
+                "tickets.ticket_detail",
+                ticket_id=attachment.ticket_id,
+                **({"compact": "1"} if compact_mode else {}),
+            )
+        )
 
     return send_from_directory(
         directory=str(file_path.parent),

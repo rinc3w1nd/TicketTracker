@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ ticket.title }} · TicketTracker{% endblock %}
 {% block content %}
+{% set is_compact = compact_mode|default(false) %}
 <article class="ticket-detail" style="--ticket-accent: {{ ticket.display_color }}; --ticket-tint: {{ ticket.tint_color }};">
   <header>
     <div class="title-group">
@@ -63,7 +64,12 @@
         {% endif %}
       </dl>
       <div class="actions">
-        <a class="button" href="{{ url_for('tickets.edit_ticket', ticket_id=ticket.id) }}">Edit ticket</a>
+        <a
+          class="button"
+          href="{{ url_for('tickets.edit_ticket', ticket_id=ticket.id) }}{% if is_compact %}?compact=1{% endif %}"
+        >
+          Edit ticket
+        </a>
       </div>
     </aside>
   </section>
@@ -85,7 +91,9 @@
       <ul>
         {% for attachment in ticket.attachments %}
           <li>
-            <a href="{{ url_for('tickets.download_attachment', attachment_id=attachment.id) }}">{{ attachment.display_name }}</a>
+            <a href="{{ url_for('tickets.download_attachment', attachment_id=attachment.id) }}{% if is_compact %}?compact=1{% endif %}">
+              {{ attachment.display_name }}
+            </a>
             <span class="attachment-meta">Uploaded {{ attachment.uploaded_at.strftime('%b %d, %Y %H:%M') }}</span>
           </li>
         {% endfor %}
@@ -113,7 +121,11 @@
             {% if update.attachments %}
               <ul class="update-attachments">
                 {% for attachment in update.attachments %}
-                  <li><a href="{{ url_for('tickets.download_attachment', attachment_id=attachment.id) }}">{{ attachment.display_name }}</a></li>
+                  <li>
+                    <a href="{{ url_for('tickets.download_attachment', attachment_id=attachment.id) }}{% if is_compact %}?compact=1{% endif %}">
+                      {{ attachment.display_name }}
+                    </a>
+                  </li>
                 {% endfor %}
               </ul>
             {% endif %}
@@ -128,7 +140,12 @@
 
 <section class="panel">
   <h3>Add update</h3>
-  <form method="post" action="{{ url_for('tickets.add_update', ticket_id=ticket.id) }}" enctype="multipart/form-data" class="update-form">
+  <form
+    method="post"
+    action="{{ url_for('tickets.add_update', ticket_id=ticket.id) }}{% if is_compact %}?compact=1{% endif %}"
+    enctype="multipart/form-data"
+    class="update-form"
+  >
     <div class="field-group">
       <label for="message">Message</label>
       <textarea id="message" name="message" rows="4" placeholder="Share progress, blockers, or notes"></textarea>
