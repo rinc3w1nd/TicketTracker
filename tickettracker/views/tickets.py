@@ -654,10 +654,12 @@ def edit_ticket(ticket_id: int):
 @tickets_bp.route("/tickets/<int:ticket_id>/updates", methods=["POST"])
 def add_update(ticket_id: int):
     ticket = Ticket.query.get_or_404(ticket_id)
+    config = _app_config()
     compact_mode = _is_compact_mode()
 
     message = request.form.get("message", "").strip()
-    author = request.form.get("author") or None
+    submitted_by = (request.form.get("submitted_by") or "").strip()
+    author = submitted_by or config.default_submitted_by
     new_status = request.form.get("status") or ticket.status
     hold_reason = request.form.get("on_hold_reason") or None
     raw_re_age = request.form.get("reage_ticket")

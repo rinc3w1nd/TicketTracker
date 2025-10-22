@@ -11,6 +11,7 @@ from typing import Any, Dict, Iterable, List, Mapping, MutableMapping, Optional
 DEFAULT_CONFIG_NAME = "config.json"
 
 DEFAULT_SECRET_KEY = "dev-secret-key-change-me"
+DEFAULT_SUBMITTED_BY = "Support Team"
 
 
 GRADIENT_STAGE_ORDER: List[str] = ["stage0", "stage1", "stage2", "stage3"]
@@ -38,6 +39,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "secret_key": DEFAULT_SECRET_KEY,
     "database": {"uri": "sqlite:///tickettracker.db"},
     "uploads": {"directory": "uploads"},
+    "default_submitted_by": DEFAULT_SUBMITTED_BY,
     "priorities": ["Low", "Medium", "High", "Critical"],
     "hold_reasons": [
         "Awaiting customer response",
@@ -155,6 +157,7 @@ class AppConfig:
     priorities: List[str]
     hold_reasons: List[str]
     workflow: List[str]
+    default_submitted_by: str
     sla: SLAConfig
     colors: ColorConfig
 
@@ -289,6 +292,20 @@ def load_config(config_path: Optional[os.PathLike[str] | str] = None) -> AppConf
     merged: Dict[str, Any] = json.loads(json.dumps(DEFAULT_CONFIG))  # deep copy
     _merge_dict(merged, loaded_data)
 
+    default_submitted_by_value = merged.get(
+        "default_submitted_by", DEFAULT_SUBMITTED_BY
+    )
+    if isinstance(default_submitted_by_value, str):
+        default_submitted_by = (
+            default_submitted_by_value.strip() or DEFAULT_SUBMITTED_BY
+        )
+    elif default_submitted_by_value is None:
+        default_submitted_by = DEFAULT_SUBMITTED_BY
+    else:
+        default_submitted_by = (
+            str(default_submitted_by_value).strip() or DEFAULT_SUBMITTED_BY
+        )
+
     sla_config = merged.get("sla", {})
     colors_config = merged.get("colors", {})
 
@@ -343,6 +360,7 @@ def load_config(config_path: Optional[os.PathLike[str] | str] = None) -> AppConf
         priorities=list(merged.get("priorities", [])),
         hold_reasons=list(merged.get("hold_reasons", [])),
         workflow=list(merged.get("workflow", [])),
+        default_submitted_by=default_submitted_by,
         sla=SLAConfig(
             due_stage_days=due_stage_days,
             priority_stage_days=priority_stage_days,
