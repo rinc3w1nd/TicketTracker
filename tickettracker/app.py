@@ -4,7 +4,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional
 
-from flask import Flask
+from flask import Flask, current_app
 
 from .config import AppConfig, load_config
 from .extensions import db
@@ -29,6 +29,7 @@ def create_app(config_path: Optional[str | Path] = None) -> Flask:
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["UPLOAD_FOLDER"] = str(app_config.uploads_path)
     app.config["APP_CONFIG"] = app_config
+    app.config["DEMO_MODE"] = app_config.demo_mode
 
     # Ensure the uploads directory exists before the first request.
     uploads_path = app_config.uploads_path
@@ -43,13 +44,15 @@ def create_app(config_path: Optional[str | Path] = None) -> Flask:
         db.create_all()
         run_migrations()
 
+    from .views.settings import settings_bp
     from .views.tickets import tickets_bp
 
+    app.register_blueprint(settings_bp)
     app.register_blueprint(tickets_bp)
 
     @app.context_processor
     def inject_app_config() -> dict[str, AppConfig]:
-        return {"app_config": app_config}
+        return {"app_config": current_app.config["APP_CONFIG"]}
 
     return app
 

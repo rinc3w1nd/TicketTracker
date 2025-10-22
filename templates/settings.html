@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% set is_compact = compact_mode|default(true) %}
+{% set compact_value = '1' if is_compact else '0' %}
+{% block title %}Settings · TicketTracker{% endblock %}
+{% block content %}
+  <section class="panel settings-panel">
+    <h2>Application settings</h2>
+    <p class="help">
+      {% if config.source_path %}
+        Changes are saved to <code>{{ config.source_path }}</code>.
+      {% else %}
+        Changes are saved to the default configuration file.
+      {% endif %}
+    </p>
+    <form
+      method="post"
+      action="{{ url_for('settings.view_settings', compact=compact_value) }}"
+      class="settings-form"
+    >
+      <div class="field-group">
+        <label for="default_submitted_by">Default submitted by</label>
+        <input
+          type="text"
+          id="default_submitted_by"
+          name="default_submitted_by"
+          value="{{ form.default_submitted_by|default('') }}"
+          required
+        />
+      </div>
+
+      <div class="field-group">
+        <label for="priorities">Priorities</label>
+        <textarea
+          id="priorities"
+          name="priorities"
+          rows="4"
+          required
+        >{{- form.priorities|default('') -}}</textarea>
+        <p class="help">Enter one priority per line, ordered from lowest to highest.</p>
+      </div>
+
+      <div class="field-group">
+        <label for="hold_reasons">Hold reasons</label>
+        <textarea
+          id="hold_reasons"
+          name="hold_reasons"
+          rows="4"
+          required
+        >{{- form.hold_reasons|default('') -}}</textarea>
+        <p class="help">Use one reason per line to populate the on-hold dropdown.</p>
+      </div>
+
+      <div class="field-group">
+        <label for="workflow">Workflow statuses</label>
+        <textarea
+          id="workflow"
+          name="workflow"
+          rows="4"
+          required
+        >{{- form.workflow|default('') -}}</textarea>
+        <p class="help">List statuses in the order they should appear in dropdowns.</p>
+      </div>
+
+      <div class="field-group">
+        <label for="html_sections">Clipboard HTML sections</label>
+        <textarea
+          id="html_sections"
+          name="html_sections"
+          rows="4"
+        >{{- form.html_sections|default('') -}}</textarea>
+        <p class="help">Customize the sections used when generating HTML clipboard summaries.</p>
+      </div>
+
+      <div class="field-group">
+        <label for="text_sections">Clipboard text sections</label>
+        <textarea
+          id="text_sections"
+          name="text_sections"
+          rows="4"
+        >{{- form.text_sections|default('') -}}</textarea>
+        <p class="help">Leave blank to reuse the HTML section list for plain text summaries.</p>
+      </div>
+
+      <div class="field-group">
+        <label for="updates_limit">Clipboard updates limit</label>
+        <input
+          type="number"
+          id="updates_limit"
+          name="updates_limit"
+          min="0"
+          value="{{ form.updates_limit|default('') }}"
+        />
+        <p class="help">Limit the number of recent updates included in clipboard exports.</p>
+      </div>
+
+      <div class="field-group checkbox">
+        <label class="checkbox-label" for="demo_mode">
+          <input
+            type="checkbox"
+            id="demo_mode"
+            name="demo_mode"
+            {% if form.demo_mode %}checked{% endif %}
+          />
+          <span>Enable demo mode enhancements</span>
+        </label>
+        <p class="help">Demo mode enables sample data helpers and other onboarding aids.</p>
+      </div>
+
+      <div class="actions">
+        <button type="submit" class="button primary">Save changes</button>
+        <a class="button" href="{{ url_for('tickets.list_tickets', compact=compact_value) }}">Cancel</a>
+      </div>
+    </form>
+  </section>
+{% endblock %}
