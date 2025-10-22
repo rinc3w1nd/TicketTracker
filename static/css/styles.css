@@ -351,22 +351,35 @@ body.compact .detail-grid aside dl {
 }
 
 body.compact .timeline {
-  margin: 1.5rem 0 0;
+  margin: 1.15rem 0 0;
 }
 
 body.compact .timeline li {
-  padding-left: 2.25rem;
-  margin-bottom: 1.3rem;
+  padding-left: 1.9rem;
+  margin-bottom: 1.05rem;
 }
 
 body.compact .timeline-content {
-  padding: 0.85rem;
-  border-radius: 0.9rem;
+  padding: 0.7rem;
+  border-radius: 0.75rem;
+}
+
+body.compact .timeline-content p {
+  margin-bottom: 0.65rem;
+}
+
+body.compact .timeline-content p:last-child {
+  margin-bottom: 0;
 }
 
 body.compact .update-meta {
-  gap: 0.4rem 0.75rem;
-  font-size: 0.75rem;
+  gap: 0.3rem 0.6rem;
+  font-size: 0.7rem;
+}
+
+body.compact .update-meta .timestamp,
+body.compact .update-meta .status-change {
+  font-size: 0.68rem;
 }
 
 body.compact .empty-state,
