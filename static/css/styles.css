@@ -732,9 +732,11 @@ body.compact .app-footer {
 }
 
 .due {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.25rem;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.35rem;
+  row-gap: 0.2rem;
+  flex-wrap: wrap;
 }
 
 .status-badge,
@@ -749,6 +751,7 @@ body.compact .app-footer {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   white-space: nowrap;
+  flex-shrink: 0;
   text-shadow: 0 1px 2px rgba(15, 23, 42, 0.3);
   box-shadow: 0 6px 18px rgba(2, 6, 23, 0.35);
   border: 1px solid rgba(148, 163, 184, 0.35);
@@ -779,10 +782,10 @@ body.compact .app-footer {
 
 .due-badge {
   --due-color: var(--accent);
-  background: color-mix(in srgb, var(--due-color) 32%, transparent);
-  border-color: color-mix(in srgb, var(--due-color) 55%, transparent);
+  background: color-mix(in srgb, var(--due-color, var(--accent)) 32%, transparent);
+  border-color: color-mix(in srgb, var(--due-color, var(--accent)) 55%, transparent);
   color: #f8fafc;
-  color: color-mix(in srgb, var(--due-color) 80%, #f8fafc 35%);
+  color: color-mix(in srgb, var(--due-color, var(--accent)) 80%, #f8fafc 35%);
 }
 
 .due-badge[data-state='scheduled'],
@@ -792,9 +795,9 @@ body.compact .app-footer {
 
 .due-badge[data-state='overdue'],
 .due-badge[data-state='sla-breached'] {
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--due-color) 55%, transparent),
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--due-color, var(--accent)) 55%, transparent),
     0 10px 24px rgba(127, 29, 29, 0.45);
-  color: color-mix(in srgb, var(--due-color) 85%, #fee2e2 35%);
+  color: color-mix(in srgb, var(--due-color, var(--accent)) 85%, #fee2e2 35%);
 }
 
 .due-badge[data-state='none'] {
@@ -805,11 +808,23 @@ body.compact .app-footer {
   box-shadow: none;
 }
 
-.age-reference {
+.age-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
   font-size: 0.7rem;
+  font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(148, 163, 184, 0.85);
+  white-space: nowrap;
+  line-height: 1;
+  border: 1px dashed color-mix(in srgb, var(--due-color, rgba(148, 163, 184, 0.6)) 45%, transparent);
+  background: color-mix(in srgb, var(--due-color, rgba(148, 163, 184, 0.35)) 20%, transparent);
+  color: color-mix(in srgb, var(--due-color, rgba(148, 163, 184, 0.85)) 80%, #f8fafc 30%);
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.25);
+  flex-shrink: 0;
 }
 
 .priority-badge {
