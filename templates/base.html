@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}TicketTracker{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="brand">
+        <span class="logo">🎫</span>
+        <div>
+          <h1>TicketTracker</h1>
+          <p class="subtitle">Local-first ticketing desk</p>
+        </div>
+      </div>
+      <nav class="nav-links">
+        <a href="{{ url_for('tickets.list_tickets') }}">Tickets</a>
+        <a href="{{ url_for('tickets.create_ticket') }}" class="button primary">New Ticket</a>
+      </nav>
+    </header>
+
+    <main class="content">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-container">
+            {% for category, message in messages %}
+              <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </main>
+
+    <footer class="app-footer">
+      <p>Uploads stored in <code>{{ app_config.uploads_path }}</code>. Customize colors and SLAs via the JSON config.</p>
+    </footer>
+  </body>
+</html>

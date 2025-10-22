@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% if ticket %}
+  {% set page_title = 'Edit Ticket' %}
+{% else %}
+  {% set page_title = 'New Ticket' %}
+{% endif %}
+{% block title %}{{ page_title }} · TicketTracker{% endblock %}
+{% block content %}
+<section class="panel">
+  <h2>{{ page_title }}</h2>
+  <form method="post" enctype="multipart/form-data" class="ticket-form">
+    <div class="field-group">
+      <label for="title">Title</label>
+      <input type="text" id="title" name="title" value="{{ ticket.title if ticket else '' }}" required />
+    </div>
+    <div class="field-group">
+      <label for="description">Description</label>
+      <textarea id="description" name="description" rows="6" required>{{ ticket.description if ticket else '' }}</textarea>
+    </div>
+    <div class="field-group split">
+      <div>
+        <label for="requester">Requester</label>
+        <input type="text" id="requester" name="requester" value="{{ ticket.requester if ticket else '' }}" />
+      </div>
+      <div>
+        <label for="watchers">Watchers (comma separated)</label>
+        <input type="text" id="watchers" name="watchers" value="{{ ticket.watchers|join(', ') if ticket else '' }}" />
+      </div>
+    </div>
+    <div class="field-group split">
+      <div>
+        <label for="priority">Priority</label>
+        <select id="priority" name="priority">
+          {% for priority in priorities %}
+            <option value="{{ priority }}" {% if ticket and ticket.priority == priority %}selected{% endif %}>{{ priority }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="status">Status</label>
+        <select id="status" name="status">
+          {% for status in workflow %}
+            <option value="{{ status }}" {% if ticket and ticket.status == status %}selected{% endif %}>{{ status }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="field-group">
+      <label for="due_date">Due date</label>
+      <input type="datetime-local" id="due_date" name="due_date" value="{{ ticket.due_date.strftime('%Y-%m-%dT%H:%M') if ticket and ticket.due_date else '' }}" />
+    </div>
+    <div class="field-group" {% if not ticket or ticket.status != 'On Hold' %}data-hidden{% endif %}>
+      <label for="on_hold_reason">On hold reason</label>
+      <select id="on_hold_reason" name="on_hold_reason">
+        <option value="">Select reason</option>
+        {% for reason in hold_reasons %}
+          <option value="{{ reason }}" {% if ticket and ticket.on_hold_reason == reason %}selected{% endif %}>{{ reason }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field-group">
+      <label for="tags">Tags</label>
+      <input type="text" id="tags" name="tags" value="{{ ticket.tag_names|join(', ') if ticket else '' }}" placeholder="Comma separated" />
+    </div>
+    <div class="field-group">
+      <label for="links">Links</label>
+      <textarea id="links" name="links" rows="2" placeholder="One link per line">{{ ticket.links if ticket else '' }}</textarea>
+    </div>
+    <div class="field-group">
+      <label for="notes">Private notes</label>
+      <textarea id="notes" name="notes" rows="3">{{ ticket.notes if ticket else '' }}</textarea>
+    </div>
+    <div class="field-group">
+      <label for="attachments">Attachments</label>
+      <input type="file" id="attachments" name="attachments" multiple />
+      <p class="help">Files upload into <code>{{ app_config.uploads_path }}</code>. Existing attachments stay unchanged.</p>
+    </div>
+    <div class="actions">
+      <button type="submit" class="button primary">Save</button>
+      <a class="button" href="{{ url_for('tickets.list_tickets') }}">Cancel</a>
+    </div>
+  </form>
+</section>
+<script>
+  const statusSelect = document.getElementById('status');
+  const holdGroup = document.querySelector('.ticket-form [data-hidden]');
+  const toggleHold = () => {
+    if (!holdGroup) return;
+    if (statusSelect && statusSelect.value === 'On Hold') {
+      holdGroup.removeAttribute('data-hidden');
+    } else {
+      holdGroup.setAttribute('data-hidden', '');
+    }
+  };
+  if (statusSelect) {
+    statusSelect.addEventListener('change', toggleHold);
+    toggleHold();
+  }
+</script>
+{% endblock %}

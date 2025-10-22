@@ -59,3 +59,42 @@ Requirements and Expected Behavior
 	•	Flexible enough to act as personal help desk, client tracker, or to-do manager.
 
 In short: TicketTracker should function as a small, private help-desk system that visually prioritizes tasks by time and importance, maintains full history and attachments, and stays entirely under the user’s control.
+---
+
+## Getting started
+
+### Prerequisites
+- Python 3.10 or newer
+- `pip` for installing Python packages
+
+### Installation
+```bash
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+### Configuration
+Runtime behaviour is driven by `config.json` in the project root. The file controls:
+- database location (`database.uri`, defaults to SQLite beside the project)
+- uploads directory (`uploads.directory`)
+- workflow statuses, priorities, and hold reasons
+- SLA timing thresholds used for ticket colouring
+- palette overrides for statuses, priorities, and tag chips
+
+You can provide a different configuration by setting `TICKETTRACKER_CONFIG` to an alternate JSON file path before starting the app.
+
+### Running the development server
+```bash
+flask --app tickettracker.app:create_app run --debug
+```
+
+The command creates the SQLite database (if missing), ensures the uploads directory exists, and serves the UI at <http://127.0.0.1:5000>.
+
+Uploaded attachments are stored locally under the directory defined in the JSON configuration (defaults to `uploads/`). Backing up the database file and uploads folder is sufficient to preserve all data.
+
+### Workflow highlights
+- Tickets can be created, edited, filtered, and searched from the dashboard.
+- Status transitions automatically create audit-log entries on the ticket timeline.
+- Attachments may be added when creating tickets or posting updates, and can be downloaded from the detail page.
+- SLA-based colouring, tag chips, and hold-reason presets all respond to configuration changes without code edits.

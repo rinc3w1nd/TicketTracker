@@ -1,0 +1,49 @@
+{
+  "database": {
+    "uri": "sqlite:///tickettracker.db"
+  },
+  "uploads": {
+    "directory": "uploads"
+  },
+  "priorities": ["Low", "Medium", "High", "Urgent"],
+  "hold_reasons": [
+    "Awaiting customer response",
+    "Blocked by dependency",
+    "Pending scheduled work",
+    "Researching solution"
+  ],
+  "workflow": ["Open", "In Progress", "On Hold", "Resolved", "Closed", "Cancelled"],
+  "sla": {
+    "due_soon_hours": 24,
+    "overdue_grace_minutes": 30,
+    "priority_open_days": {
+      "Low": 7,
+      "Medium": 5,
+      "High": 3,
+      "Urgent": 1
+    }
+  },
+  "colors": {
+    "gradient": {
+      "safe": "#38bdf8",
+      "warning": "#facc15",
+      "overdue": "#f87171"
+    },
+    "statuses": {
+      "on_hold": "#9c88ff",
+      "resolved": "#34d399",
+      "closed": "#475569",
+      "cancelled": "#64748b"
+    },
+    "priorities": {
+      "Low": "#34d399",
+      "Medium": "#facc15",
+      "High": "#fb7185",
+      "Urgent": "#f43f5e"
+    },
+    "tags": {
+      "background": "#1e293b",
+      "text": "#e2e8f0"
+    }
+  }
+}
