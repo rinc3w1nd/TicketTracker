@@ -62,7 +62,16 @@
             <h2><a href="{{ url_for('tickets.ticket_detail', ticket_id=ticket.id) }}">{{ ticket.title }}</a></h2>
             <div class="meta">
               <span class="status">{{ ticket.status }}{% if ticket.status == 'On Hold' and ticket.on_hold_reason %} · {{ ticket.on_hold_reason }}{% endif %}</span>
-              <span class="priority" data-priority="{{ ticket.priority }}">{{ ticket.priority }}</span>
+              {% set priority_color = config.colors.priorities.get(ticket.priority, '#3b82f6') %}
+              <span class="priority">
+                <span
+                  class="priority-badge"
+                  data-priority="{{ ticket.priority }}"
+                  style="--priority-color: {{ priority_color }};"
+                >
+                  {{ ticket.priority }}
+                </span>
+              </span>
               {% if ticket.due_date %}
                 <span class="due">Due {{ ticket.due_date.strftime('%b %d, %Y %H:%M') }}</span>
               {% else %}
