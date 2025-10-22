@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import colorsys
+import math
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Iterable, List
@@ -157,6 +158,68 @@ def _compute_ticket_tint(
     return _format_rgba(red, green, blue)
 
 
+def _compute_backlog_remaining_days(
+    ticket: Ticket, config: AppConfig, now: datetime
+) -> float | None:
+    """Return days remaining for tickets managed by backlog SLA."""
+
+    reference_date = ticket.age_reference_date or (
+        ticket.created_at.date() if ticket.created_at else now.date()
+    )
+    reference_datetime = datetime.combine(reference_date, datetime.min.time())
+    age_seconds = max(0.0, (now - reference_datetime).total_seconds())
+    age_days = age_seconds / 86400
+    return config.sla.remaining_days(ticket.priority or "", age_days=age_days)
+
+
+def _format_sla_countdown(remaining_days: float) -> str:
+    """Return a human-friendly countdown string for SLA tracking."""
+
+    if math.isnan(remaining_days) or math.isinf(remaining_days):
+        remaining_days = 0.0
+
+    if remaining_days >= 0:
+        prefix = "T-"
+        day_count = max(0, math.ceil(remaining_days))
+    else:
+        prefix = "T+"
+        day_count = math.ceil(abs(remaining_days))
+
+    label = "Day" if day_count == 1 else "Days"
+    return f"SLA : {prefix}{day_count} {label}"
+
+
+def _annotate_ticket_sla(
+    ticket: Ticket, config: AppConfig, now: datetime | None = None
+) -> None:
+    """Attach SLA countdown and overdue state metadata to the ticket."""
+
+    current = now or datetime.utcnow()
+    sla_countdown: str | None = None
+    sla_remaining: float | None = None
+    sla_breached = False
+
+    if ticket.due_date:
+        sla_breached = ticket.due_date <= current
+    else:
+        sla_remaining = _compute_backlog_remaining_days(ticket, config, current)
+        if sla_remaining is not None:
+            sla_breached = sla_remaining < 0
+            sla_countdown = _format_sla_countdown(sla_remaining)
+
+    ticket.is_overdue = sla_breached  # type: ignore[attr-defined]
+    ticket.sla_remaining_days = sla_remaining  # type: ignore[attr-defined]
+    ticket.sla_countdown = sla_countdown  # type: ignore[attr-defined]
+    ticket.sla_is_breached = sla_breached  # type: ignore[attr-defined]
+
+    tint_intensity = OVERDUE_TINT_INTENSITY if sla_breached else BASE_TINT_INTENSITY
+    ticket.tint_color = _compute_ticket_tint(
+        ticket.display_color,
+        intensity=tint_intensity,
+        overdue=sla_breached,
+    )  # type: ignore[attr-defined]
+
+
 def _boost_overdue_rgb(red: int, green: int, blue: int) -> tuple[int, int, int]:
     """Return an intensified RGB tuple for overdue overlays."""
 
@@ -183,15 +246,10 @@ def _is_ticket_overdue(
     if ticket.due_date:
         return ticket.due_date <= current
 
-    reference_date = ticket.age_reference_date or (
-        ticket.created_at.date() if ticket.created_at else current.date()
-    )
-    reference_datetime = datetime.combine(reference_date, datetime.min.time())
-    age_days = max(0.0, (current - reference_datetime).total_seconds() / 86400)
-    thresholds = config.sla.priority_thresholds(ticket.priority or "")
-    if not thresholds:
+    remaining = _compute_backlog_remaining_days(ticket, config, current)
+    if remaining is None:
         return False
-    return age_days > thresholds[-1]
+    return remaining < 0
 
 
 def _is_compact_mode() -> bool:
@@ -346,14 +404,7 @@ def list_tickets():
     now = datetime.utcnow()
     for ticket in tickets:
         ticket.display_color = _compute_ticket_color(ticket, config)  # type: ignore[attr-defined]
-        is_overdue = _is_ticket_overdue(ticket, config, now)
-        ticket.is_overdue = is_overdue  # type: ignore[attr-defined]
-        tint_intensity = OVERDUE_TINT_INTENSITY if is_overdue else BASE_TINT_INTENSITY
-        ticket.tint_color = _compute_ticket_tint(
-            ticket.display_color,
-            intensity=tint_intensity,
-            overdue=is_overdue,
-        )  # type: ignore[attr-defined]
+        _annotate_ticket_sla(ticket, config, now)
 
     available_tags = Tag.query.order_by(Tag.name).all()
 
@@ -392,14 +443,7 @@ def ticket_detail(ticket_id: int):
     ticket = Ticket.query.get_or_404(ticket_id)
     compact_mode = _is_compact_mode()
     ticket.display_color = _compute_ticket_color(ticket, config)  # type: ignore[attr-defined]
-    is_overdue = _is_ticket_overdue(ticket, config)
-    ticket.is_overdue = is_overdue  # type: ignore[attr-defined]
-    tint_intensity = OVERDUE_TINT_INTENSITY if is_overdue else BASE_TINT_INTENSITY
-    ticket.tint_color = _compute_ticket_tint(
-        ticket.display_color,
-        intensity=tint_intensity,
-        overdue=is_overdue,
-    )  # type: ignore[attr-defined]
+    _annotate_ticket_sla(ticket, config)
     return render_template(
         "ticket_detail.html",
         ticket=ticket,

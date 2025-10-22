@@ -126,6 +126,13 @@
               </span>
               {% if ticket.due_date %}
                 <span class="due">Due {{ ticket.due_date.strftime('%b %d, %Y %H:%M') }}</span>
+              {% elif ticket.sla_countdown %}
+                <span
+                  class="due sla-chip"
+                  data-sla-breached="{{ 'true' if ticket.sla_is_breached else 'false' }}"
+                >
+                  {{ ticket.sla_countdown }}
+                </span>
               {% else %}
                 <span class="due no-date">No due date</span>
               {% endif %}
