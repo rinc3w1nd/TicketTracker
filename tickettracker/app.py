@@ -13,7 +13,13 @@ from .extensions import db
 def create_app(config_path: Optional[str | Path] = None) -> Flask:
     """Create and configure the Flask application."""
 
-    app = Flask(__name__, instance_relative_config=True)
+    repo_root = Path(__file__).resolve().parent.parent
+    app = Flask(
+        __name__,
+        instance_relative_config=True,
+        template_folder=str(repo_root / "templates"),
+        static_folder=str(repo_root / "static"),
+    )
     app_config: AppConfig = load_config(config_path)
 
     app.config["SQLALCHEMY_DATABASE_URI"] = app_config.database_uri
