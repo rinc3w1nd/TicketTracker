@@ -7,65 +7,71 @@
   <form method="get" class="filter-form" data-filter-form>
     <input type="hidden" name="compact" value="{{ compact_value }}" />
     <div class="filter-toolbar">
-      <details
-        class="filter-collapsible"
-        data-filter-collapsible
-        data-has-active="{{ 'true' if filters.has_active_filters else 'false' }}"
-        {% if filters.has_active_filters %}open{% endif %}
-      >
-        <summary class="filter-toggle">
-          <span>Filters</span>
-          {% if filters.has_active_filters %}
-            <span class="filter-indicator" aria-hidden="true">•</span>
-            <span class="sr-only">Active filters applied</span>
-          {% endif %}
-        </summary>
-        <div class="filter-fields">
-          <div class="field-group">
-            <label for="search">Search</label>
-            <input type="search" id="search" name="q" placeholder="Search tickets" value="{{ filters.search or '' }}" />
-          </div>
-          <div class="field-group">
-            <label for="status">Status</label>
-            <select id="status" name="status">
-              <option value="">All</option>
-              {% for status in config.workflow %}
-                <option value="{{ status }}" {% if filters.status == status %}selected{% endif %}>{{ status }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="field-group">
-            <label for="priority">Priority</label>
-            <select id="priority" name="priority">
-              <option value="">All</option>
-              {% for priority in priorities %}
-                <option value="{{ priority }}" {% if filters.priority == priority %}selected{% endif %}>{{ priority }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="field-group">
-            <label for="tag">Tags</label>
-            <select id="tag" name="tag" multiple size="3">
-              {% for tag in available_tags %}
-                <option value="{{ tag.name }}" {% if tag.name in filters.tags %}selected{% endif %}>{{ tag.name }}</option>
-              {% endfor %}
-            </select>
-            <div class="tag-mode">
-              <label><input type="radio" name="tag_mode" value="any" {% if filters.tag_mode != 'all' %}checked{% endif %} /> Any</label>
-              <label><input type="radio" name="tag_mode" value="all" {% if filters.tag_mode == 'all' %}checked{% endif %} /> All</label>
+      <div class="filter-controls">
+        <span class="filter-label">Filter</span>
+        <details
+          class="filter-collapsible"
+          data-filter-collapsible
+          data-has-active="{{ 'true' if filters.has_active_filters else 'false' }}"
+          {% if filters.has_active_filters %}open{% endif %}
+        >
+          <summary class="filter-toggle">
+            <span class="filter-toggle-text">
+              <span class="filter-toggle-state filter-toggle-state--closed">Click to Filter…</span>
+              <span class="filter-toggle-state filter-toggle-state--open">Filter Options</span>
+            </span>
+            {% if filters.has_active_filters %}
+              <span class="filter-indicator" aria-hidden="true">•</span>
+              <span class="sr-only">Active filters applied</span>
+            {% endif %}
+          </summary>
+          <div class="filter-fields">
+            <div class="field-group">
+              <label for="search">Search</label>
+              <input type="search" id="search" name="q" placeholder="Search tickets" value="{{ filters.search or '' }}" />
+            </div>
+            <div class="field-group">
+              <label for="status">Status</label>
+              <select id="status" name="status">
+                <option value="">All</option>
+                {% for status in config.workflow %}
+                  <option value="{{ status }}" {% if filters.status == status %}selected{% endif %}>{{ status }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="field-group">
+              <label for="priority">Priority</label>
+              <select id="priority" name="priority">
+                <option value="">All</option>
+                {% for priority in priorities %}
+                  <option value="{{ priority }}" {% if filters.priority == priority %}selected{% endif %}>{{ priority }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="field-group">
+              <label for="tag">Tags</label>
+              <select id="tag" name="tag" multiple size="3">
+                {% for tag in available_tags %}
+                  <option value="{{ tag.name }}" {% if tag.name in filters.tags %}selected{% endif %}>{{ tag.name }}</option>
+                {% endfor %}
+              </select>
+              <div class="tag-mode">
+                <label><input type="radio" name="tag_mode" value="any" {% if filters.tag_mode != 'all' %}checked{% endif %} /> Any</label>
+                <label><input type="radio" name="tag_mode" value="all" {% if filters.tag_mode == 'all' %}checked{% endif %} /> All</label>
+              </div>
+            </div>
+            <div class="actions filter-actions" role="group" aria-label="Filter actions">
+              <button type="submit" class="button primary">Apply</button>
+              <a
+                href="{{ url_for('tickets.list_tickets', compact=compact_value) }}"
+                class="button"
+              >
+                Reset
+              </a>
             </div>
           </div>
-          <div class="actions filter-actions" role="group" aria-label="Filter actions">
-            <button type="submit" class="button primary">Apply</button>
-            <a
-              href="{{ url_for('tickets.list_tickets', compact=compact_value) }}"
-              class="button"
-            >
-              Reset
-            </a>
-          </div>
-        </div>
-      </details>
+        </details>
+      </div>
       <div class="sort-controls" data-sort-controls>
         <span class="sort-label">Sort by</span>
         <div class="sort-button-group" role="group" aria-label="Sort tickets">

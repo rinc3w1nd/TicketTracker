@@ -243,6 +243,10 @@ body.compact .filter-toolbar {
   gap: 1rem;
 }
 
+body.compact .filter-controls {
+  gap: 0.45rem;
+}
+
 body.compact .filter-collapsible {
   padding: 0.75rem 0.95rem;
   border-radius: 0.9rem;
@@ -452,8 +456,16 @@ body.compact .app-footer {
   justify-content: space-between;
 }
 
-.filter-collapsible {
+.filter-controls {
   flex: 1 1 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.filter-collapsible {
+  width: 100%;
   border: 1px solid rgba(148, 163, 184, 0.15);
   border-radius: 1rem;
   padding: 0.85rem 1.1rem;
@@ -468,7 +480,8 @@ body.compact .app-footer {
   gap: 0.5rem;
   cursor: pointer;
   font-weight: 600;
-  color: #f8fafc;
+  color: rgba(148, 163, 184, 0.85);
+  transition: color 0.2s ease;
 }
 
 .filter-collapsible > summary:focus-visible {
@@ -479,6 +492,29 @@ body.compact .app-footer {
 
 .filter-collapsible > summary::-webkit-details-marker {
   display: none;
+}
+
+.filter-collapsible[open] > summary,
+.filter-collapsible[data-has-active='true'] > summary {
+  color: #f8fafc;
+}
+
+.filter-toggle-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.filter-toggle-state--open {
+  display: none;
+}
+
+.filter-collapsible[open] .filter-toggle-state--closed {
+  display: none;
+}
+
+.filter-collapsible[open] .filter-toggle-state--open {
+  display: inline;
 }
 
 .filter-collapsible[open] {
@@ -532,6 +568,7 @@ body.compact .filter-fields .filter-actions {
   min-width: 220px;
 }
 
+.filter-label,
 .sort-label {
   font-size: 0.75rem;
   letter-spacing: 0.08em;
