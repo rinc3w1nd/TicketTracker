@@ -2,7 +2,11 @@
 {% block title %}{{ ticket.title }} · TicketTracker{% endblock %}
 {% block content %}
 {% set is_compact = compact_mode|default(false) %}
-<article class="ticket-detail" style="--ticket-accent: {{ ticket.display_color }}; --ticket-tint: {{ ticket.tint_color }};">
+<article
+  class="ticket-detail{% if ticket.is_overdue %} is-overdue{% endif %}"
+  data-overdue="{{ 'true' if ticket.is_overdue else 'false' }}"
+  style="--ticket-accent: {{ ticket.display_color }}; --ticket-tint: {{ ticket.tint_color }};"
+>
   <header>
     <div class="title-group">
       <h2>{{ ticket.title }}</h2>

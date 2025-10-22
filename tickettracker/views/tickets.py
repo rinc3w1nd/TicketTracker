@@ -1,6 +1,7 @@
 """Ticket management views."""
 from __future__ import annotations
 
+import colorsys
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Iterable, List
@@ -25,6 +26,10 @@ from ..models import Attachment, Tag, Ticket, TicketUpdate
 
 
 tickets_bp = Blueprint("tickets", __name__)
+
+BASE_TINT_INTENSITY = 0.5
+# Overdue requests ask for a stronger overlay but remain capped inside the tint helper.
+OVERDUE_TINT_INTENSITY = 0.75
 
 
 def _app_config() -> AppConfig:
@@ -87,29 +92,106 @@ def _compute_ticket_color(ticket: Ticket, config: AppConfig) -> str:
     return overdue_color
 
 
-def _compute_ticket_tint(color: str, intensity: float = 0.25) -> str:
-    """Return a translucent tint for the provided hex color."""
+def _compute_ticket_tint(
+    color: str,
+    intensity: float = BASE_TINT_INTENSITY,
+    *,
+    overdue: bool = False,
+) -> str:
+    """Return a translucent tint for the provided color.
+
+    The default tint is intentionally bolder than before (50% opacity).
+    Overdue tickets receive a saturated boost but never exceed 50%
+    opacity so text remains readable.
+    """
+
+    max_opacity = 0.5
+    normalized_intensity = max(0.0, min(1.0, intensity))
+    if overdue:
+        # Cap overdue fill at 50% but ensure we use the strongest overlay available.
+        normalized_intensity = max_opacity
+    else:
+        normalized_intensity = min(max_opacity, normalized_intensity)
+
+    def _format_rgba(red: int, green: int, blue: int) -> str:
+        return f"rgba({red}, {green}, {blue}, {normalized_intensity:.2f})"
 
     if not color:
-        return f"rgba(56, 189, 248, {intensity:.2f})"
+        base_rgb = (56, 189, 248)
+    else:
+        color = color.strip()
+        base_rgb: tuple[int, int, int] | None = None
+        if color.startswith("#"):
+            hex_value = color.lstrip("#")
+            if len(hex_value) == 3:
+                hex_value = "".join(component * 2 for component in hex_value)
+            if len(hex_value) == 6:
+                try:
+                    red = int(hex_value[0:2], 16)
+                    green = int(hex_value[2:4], 16)
+                    blue = int(hex_value[4:6], 16)
+                except ValueError:
+                    pass
+                else:
+                    base_rgb = red, green, blue
 
-    color = color.strip()
-    if color.startswith("#"):
-        hex_value = color.lstrip("#")
-        if len(hex_value) == 3:
-            hex_value = "".join(component * 2 for component in hex_value)
-        if len(hex_value) == 6:
-            try:
-                red = int(hex_value[0:2], 16)
-                green = int(hex_value[2:4], 16)
-                blue = int(hex_value[4:6], 16)
-            except ValueError:
-                pass
-            else:
-                return f"rgba({red}, {green}, {blue}, {intensity:.2f})"
+        if base_rgb is not None:
+            red, green, blue = base_rgb
+            if overdue:
+                red, green, blue = _boost_overdue_rgb(red, green, blue)
+            return _format_rgba(red, green, blue)
 
-    percent = round(intensity * 100)
-    return f"color-mix(in srgb, {color} {percent}%, transparent)"
+        if not color.startswith("#"):
+            percent = round(normalized_intensity * 100)
+            if overdue:
+                percent = max(percent, round(max_opacity * 100))
+            return f"color-mix(in srgb, {color} {percent}%, transparent)"
+
+        base_rgb = (56, 189, 248)
+
+    if overdue:
+        red, green, blue = _boost_overdue_rgb(*base_rgb)
+        return _format_rgba(red, green, blue)
+
+    red, green, blue = base_rgb
+    return _format_rgba(red, green, blue)
+
+
+def _boost_overdue_rgb(red: int, green: int, blue: int) -> tuple[int, int, int]:
+    """Return an intensified RGB tuple for overdue overlays."""
+
+    r_norm, g_norm, b_norm = (component / 255.0 for component in (red, green, blue))
+    hue, lightness, saturation = colorsys.rgb_to_hls(r_norm, g_norm, b_norm)
+    saturation = min(1.0, saturation * 1.25 + 0.05)
+    lightness = max(0.0, min(1.0, lightness * 0.9 + 0.05))
+    boosted_r, boosted_g, boosted_b = colorsys.hls_to_rgb(hue, lightness, saturation)
+    return (
+        int(round(boosted_r * 255)),
+        int(round(boosted_g * 255)),
+        int(round(boosted_b * 255)),
+    )
+
+
+def _is_ticket_overdue(
+    ticket: Ticket,
+    config: AppConfig,
+    now: datetime | None = None,
+) -> bool:
+    """Return ``True`` when a ticket exceeds its SLA window."""
+
+    current = now or datetime.utcnow()
+    if ticket.due_date:
+        return ticket.due_date <= current
+
+    reference_date = ticket.age_reference_date or (
+        ticket.created_at.date() if ticket.created_at else current.date()
+    )
+    reference_datetime = datetime.combine(reference_date, datetime.min.time())
+    age_days = max(0.0, (current - reference_datetime).total_seconds() / 86400)
+    thresholds = config.sla.priority_thresholds(ticket.priority or "")
+    if not thresholds:
+        return False
+    return age_days > thresholds[-1]
 
 
 def _is_compact_mode() -> bool:
@@ -261,9 +343,17 @@ def list_tickets():
         query = query.order_by(Ticket.due_date.is_(None), due_order, priority_order)
 
     tickets = query.all()
+    now = datetime.utcnow()
     for ticket in tickets:
         ticket.display_color = _compute_ticket_color(ticket, config)  # type: ignore[attr-defined]
-        ticket.tint_color = _compute_ticket_tint(ticket.display_color)  # type: ignore[attr-defined]
+        is_overdue = _is_ticket_overdue(ticket, config, now)
+        ticket.is_overdue = is_overdue  # type: ignore[attr-defined]
+        tint_intensity = OVERDUE_TINT_INTENSITY if is_overdue else BASE_TINT_INTENSITY
+        ticket.tint_color = _compute_ticket_tint(
+            ticket.display_color,
+            intensity=tint_intensity,
+            overdue=is_overdue,
+        )  # type: ignore[attr-defined]
 
     available_tags = Tag.query.order_by(Tag.name).all()
 
@@ -302,7 +392,14 @@ def ticket_detail(ticket_id: int):
     ticket = Ticket.query.get_or_404(ticket_id)
     compact_mode = _is_compact_mode()
     ticket.display_color = _compute_ticket_color(ticket, config)  # type: ignore[attr-defined]
-    ticket.tint_color = _compute_ticket_tint(ticket.display_color)  # type: ignore[attr-defined]
+    is_overdue = _is_ticket_overdue(ticket, config)
+    ticket.is_overdue = is_overdue  # type: ignore[attr-defined]
+    tint_intensity = OVERDUE_TINT_INTENSITY if is_overdue else BASE_TINT_INTENSITY
+    ticket.tint_color = _compute_ticket_tint(
+        ticket.display_color,
+        intensity=tint_intensity,
+        overdue=is_overdue,
+    )  # type: ignore[attr-defined]
     return render_template(
         "ticket_detail.html",
         ticket=ticket,

@@ -100,7 +100,11 @@
 <section class="ticket-grid">
   {% if tickets %}
     {% for ticket in tickets %}
-      <article class="ticket-card" style="--ticket-accent: {{ ticket.display_color }}; --ticket-tint: {{ ticket.tint_color }};">
+      <article
+        class="ticket-card{% if ticket.is_overdue %} is-overdue{% endif %}"
+        data-overdue="{{ 'true' if ticket.is_overdue else 'false' }}"
+        style="--ticket-accent: {{ ticket.display_color }}; --ticket-tint: {{ ticket.tint_color }};"
+      >
         <header>
           <div class="title-group">
             <h2>
