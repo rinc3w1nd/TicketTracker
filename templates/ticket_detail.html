@@ -34,16 +34,15 @@
             {{ ticket.priority }}
           </span>
         </span>
-        <span class="due">
+        <span class="due" style="--due-color: {{ ticket.due_badge_color }};">
           <span
             class="due-badge"
             data-state="{{ ticket.due_badge_state }}"
-            style="--due-color: {{ ticket.due_badge_color }};"
           >
             {{ ticket.due_badge_label }}
           </span>
           {% if not ticket.due_date and ticket.age_reference_date %}
-            <span class="age-reference">Aging since {{ ticket.age_reference_date.strftime('%b %d, %Y') }}</span>
+            <span class="age-badge">Aging since {{ ticket.age_reference_date.strftime('%b %d, %Y') }}</span>
           {% endif %}
         </span>
       </div>
