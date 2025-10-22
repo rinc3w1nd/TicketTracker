@@ -56,7 +56,7 @@ a:hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.5rem 5vw;
+  padding: 0.75rem 4vw;
   border-bottom: 1px solid rgba(148, 163, 184, 0.1);
   background: rgba(15, 23, 42, 0.85);
   backdrop-filter: blur(12px);
@@ -68,23 +68,23 @@ a:hover {
 .brand {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .brand .logo {
-  font-size: 2rem;
+  font-size: 1.6rem;
 }
 
 .brand .subtitle {
   margin: 0;
   color: var(--text-muted);
-  font-size: 0.85rem;
+  font-size: 0.75rem;
 }
 
 .nav-links {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .nav-links a {
@@ -96,9 +96,9 @@ a:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.85rem;
-  height: 2.85rem;
-  border-radius: 0.85rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.8rem;
   padding: 0;
   position: relative;
   line-height: 1;
@@ -110,12 +110,12 @@ a:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.1rem;
+  font-size: 1rem;
 }
 
 .icon-button .icon svg {
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 1.1rem;
+  height: 1.1rem;
   fill: currentColor;
 }
 
@@ -144,12 +144,12 @@ a:hover {
 }
 
 .nav-links .button.icon-button {
-  width: 2.85rem;
-  height: 2.85rem;
+  width: 2.5rem;
+  height: 2.5rem;
 }
 
 .nav-links .button.icon-button .icon {
-  font-size: 1.3rem;
+  font-size: 1.15rem;
 }
 
 .nav-links .button.icon-button:hover,
@@ -180,7 +180,7 @@ a:hover {
 
 .content {
   width: min(1100px, 92vw);
-  margin: 2rem auto 4rem;
+  margin: 1.25rem auto 3.5rem;
   flex: 1;
 }
 
@@ -190,25 +190,25 @@ body.compact {
 }
 
 body.compact .app-header {
-  padding: 1.1rem 4vw;
+  padding: 0.55rem 3.5vw;
 }
 
 body.compact .brand .logo {
-  font-size: 1.6rem;
+  font-size: 1.3rem;
 }
 
 body.compact .nav-links {
-  gap: 0.75rem;
+  gap: 0.6rem;
 }
 
 body.compact .icon-button {
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2.1rem;
+  height: 2.1rem;
 }
 
 body.compact .nav-links .button.icon-button {
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2.1rem;
+  height: 2.1rem;
   padding: 0;
 }
 
@@ -223,7 +223,7 @@ body.compact .nav-links .button:not(.icon-button) {
 
 body.compact .content {
   width: min(1024px, 95vw);
-  margin: 1.5rem auto 3rem;
+  margin: 1rem auto 2.5rem;
 }
 
 body.compact .panel {
@@ -386,8 +386,8 @@ body.compact .flash {
 }
 
 body.compact .app-footer {
-  padding: 1.5rem 4vw;
-  font-size: 0.8rem;
+  padding: 0.3rem 3.5vw;
+  font-size: 0.72rem;
 }
 
 .button {
@@ -1028,18 +1028,18 @@ body.compact .app-footer {
 }
 
 .app-footer {
-  padding: 2rem 5vw;
+  padding: 0.4rem 4vw;
   border-top: 1px solid rgba(148, 163, 184, 0.1);
   background: rgba(15, 23, 42, 0.7);
   text-align: center;
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
 }
 
 @media (max-width: 900px) {
   .app-header {
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.75rem;
     align-items: flex-start;
   }
 
