@@ -223,8 +223,11 @@ def list_tickets():
     order = requested_order if requested_order in {"asc", "desc"} else default_orders[sort]
 
     if sort == "priority":
+        priority_mappings = [
+            (priority, index) for index, priority in enumerate(config.priorities)
+        ]
         priority_case = db.case(
-            whens={priority: index for index, priority in enumerate(config.priorities)},
+            priority_mappings,
             value=Ticket.priority,
             else_=len(config.priorities),
         )
@@ -429,7 +432,6 @@ def edit_ticket(ticket_id: int):
 
 @tickets_bp.route("/tickets/<int:ticket_id>/updates", methods=["POST"])
 def add_update(ticket_id: int):
-    config = _app_config()
     ticket = Ticket.query.get_or_404(ticket_id)
     compact_mode = _is_compact_mode()
 
