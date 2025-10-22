@@ -24,6 +24,8 @@ DEFAULT_GRADIENT_COLORS: Dict[str, str] = {
     GRADIENT_OVERDUE_KEY: "#7f1d1d",
 }
 
+DEFAULT_TICKET_TITLE_COLOR = "#f8fafc"
+
 DEFAULT_DUE_STAGE_DAYS: List[int] = [28, 21, 14, 7]
 DEFAULT_PRIORITY_STAGE_DAYS: Dict[str, List[int]] = {
     "Low": [14, 21, 28, 35],
@@ -54,6 +56,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         "default_due_days": DEFAULT_BACKLOG_DUE_DAYS,
     },
     "colors": {
+        "ticket_title": DEFAULT_TICKET_TITLE_COLOR,
         "gradient": {
             **DEFAULT_GRADIENT_COLORS,
         },
@@ -132,6 +135,7 @@ class ColorConfig:
     statuses: Dict[str, str] = field(default_factory=dict)
     priorities: Dict[str, str] = field(default_factory=dict)
     tags: Dict[str, str] = field(default_factory=dict)
+    ticket_title: str = DEFAULT_TICKET_TITLE_COLOR
 
     def gradient_color(self, key: str) -> str:
         if key in DEFAULT_GRADIENT_COLORS:
@@ -145,6 +149,10 @@ class ColorConfig:
 
     def gradient_overdue_color(self) -> str:
         return self.gradient_color(GRADIENT_OVERDUE_KEY)
+
+    def ticket_title_color(self) -> str:
+        value = str(self.ticket_title or "").strip()
+        return value or DEFAULT_TICKET_TITLE_COLOR
 
 
 @dataclass
@@ -353,6 +361,14 @@ def load_config(config_path: Optional[os.PathLike[str] | str] = None) -> AppConf
     uploads_directory = _resolve_upload_directory(merged.get("uploads", {}).get("directory", "uploads"), base_path)
     secret_key = os.environ.get("TICKETTRACKER_SECRET_KEY") or str(merged.get("secret_key", DEFAULT_SECRET_KEY))
 
+    raw_ticket_title_color = colors_config.get("ticket_title", DEFAULT_TICKET_TITLE_COLOR)
+    if isinstance(raw_ticket_title_color, str):
+        ticket_title_color = raw_ticket_title_color.strip() or DEFAULT_TICKET_TITLE_COLOR
+    elif raw_ticket_title_color is None:
+        ticket_title_color = DEFAULT_TICKET_TITLE_COLOR
+    else:
+        ticket_title_color = str(raw_ticket_title_color).strip() or DEFAULT_TICKET_TITLE_COLOR
+
     return AppConfig(
         secret_key=secret_key,
         database_uri=database_uri,
@@ -371,5 +387,6 @@ def load_config(config_path: Optional[os.PathLike[str] | str] = None) -> AppConf
             statuses=dict(colors_config.get("statuses", {})),
             priorities=dict(colors_config.get("priorities", {})),
             tags=dict(colors_config.get("tags", {})),
+            ticket_title=ticket_title_color,
         ),
     )

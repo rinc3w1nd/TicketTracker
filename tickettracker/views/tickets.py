@@ -387,6 +387,7 @@ def list_tickets():
     query = Ticket.query
 
     compact_mode = _is_compact_mode()
+    title_color = config.colors.ticket_title_color()
 
     status_filter = request.args.get("status")
     if status_filter:
@@ -492,6 +493,7 @@ def list_tickets():
         compact_toggle_url=_build_compact_toggle_url(
             "tickets.list_tickets", compact_mode
         ),
+        ticket_title_color=title_color,
         filters={
             "status": status_filter,
             "priority": priority_filter,
@@ -516,6 +518,7 @@ def ticket_detail(ticket_id: int):
     config = _app_config()
     ticket = Ticket.query.get_or_404(ticket_id)
     compact_mode = _is_compact_mode()
+    title_color = config.colors.ticket_title_color()
     status_palette = _build_status_palette(config)
     ticket.display_color = _compute_ticket_color(ticket, config, status_palette)  # type: ignore[attr-defined]
     ticket.status_color = (
@@ -534,6 +537,7 @@ def ticket_detail(ticket_id: int):
         compact_toggle_url=_build_compact_toggle_url(
             "tickets.ticket_detail", compact_mode, ticket_id=ticket.id
         ),
+        ticket_title_color=title_color,
     )
 
 

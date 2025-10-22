@@ -9,6 +9,7 @@
   --accent: #38bdf8;
   --accent-muted: rgba(56, 189, 248, 0.2);
   --danger: #f87171;
+  --ticket-title-color: #f8fafc;
   font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
@@ -686,6 +687,28 @@ body.compact .app-footer {
 
 .ticket-card .title-group h2 {
   margin-bottom: 0.35rem;
+}
+
+.ticket-title {
+  color: var(--ticket-title-color, #f8fafc);
+}
+
+.ticket-title-link {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.2s ease, text-shadow 0.2s ease;
+}
+
+.ticket-title-link:hover,
+.ticket-title-link:focus-visible {
+  color: color-mix(in srgb, var(--ticket-title-color, #f8fafc) 90%, #ffffff 10%);
+  text-decoration: none;
+  text-shadow: 0 10px 32px rgba(15, 23, 42, 0.45);
+}
+
+.ticket-title-link:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--ticket-title-color, #f8fafc) 65%, transparent 35%);
+  outline-offset: 4px;
 }
 
 .ticket-card .meta,
