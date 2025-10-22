@@ -11,7 +11,18 @@
     <div class="title-group">
       <h2>{{ ticket.title }}</h2>
       <div class="meta">
-        <span class="status">{{ ticket.status }}{% if ticket.status == 'On Hold' and ticket.on_hold_reason %} · {{ ticket.on_hold_reason }}{% endif %}</span>
+        <span class="status">
+          <span
+            class="status-badge"
+            data-status="{{ (ticket.status or 'unknown')|lower|replace(' ', '-') }}"
+            style="--status-color: {{ ticket.status_color }};"
+          >
+            {{ ticket.status }}
+          </span>
+          {% if ticket.status == 'On Hold' and ticket.on_hold_reason %}
+            <span class="status-note">{{ ticket.on_hold_reason }}</span>
+          {% endif %}
+        </span>
         {% set priority_color = config.colors.priorities.get(ticket.priority, '#3b82f6') %}
         <span class="priority">
           <span
@@ -22,24 +33,18 @@
             {{ ticket.priority }}
           </span>
         </span>
-        {% if ticket.due_date %}
-          <span class="due">Due {{ ticket.due_date.strftime('%b %d, %Y %H:%M') }}</span>
-        {% elif ticket.sla_countdown %}
+        <span class="due">
           <span
-            class="due sla-chip"
-            data-sla-breached="{{ 'true' if ticket.sla_is_breached else 'false' }}"
+            class="due-badge"
+            data-state="{{ ticket.due_badge_state }}"
+            style="--due-color: {{ ticket.due_badge_color }};"
           >
-            {{ ticket.sla_countdown }}
+            {{ ticket.due_badge_label }}
           </span>
-          {% if ticket.age_reference_date %}
+          {% if not ticket.due_date and ticket.age_reference_date %}
             <span class="age-reference">Aging since {{ ticket.age_reference_date.strftime('%b %d, %Y') }}</span>
           {% endif %}
-        {% else %}
-          <span class="due no-date">No due date</span>
-          {% if ticket.age_reference_date %}
-            <span class="age-reference">Aging since {{ ticket.age_reference_date.strftime('%b %d, %Y') }}</span>
-          {% endif %}
-        {% endif %}
+        </span>
       </div>
     </div>
     <div class="timestamps">

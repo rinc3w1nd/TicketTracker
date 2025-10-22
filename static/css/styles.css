@@ -605,6 +605,94 @@ body.compact .app-footer {
   display: inline-flex;
 }
 
+.status,
+.due {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.due {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+}
+
+.status-badge,
+.due-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(15, 23, 42, 0.3);
+  box-shadow: 0 6px 18px rgba(2, 6, 23, 0.35);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.status-badge {
+  --status-color: rgba(148, 163, 184, 0.25);
+  background: var(--status-color);
+  background: color-mix(in srgb, var(--status-color) 45%, transparent);
+  border-color: color-mix(in srgb, var(--status-color) 65%, transparent);
+  color: #f8fafc;
+  color: color-mix(in srgb, var(--status-color) 80%, #f8fafc 35%);
+}
+
+.status-note {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  letter-spacing: 0.03em;
+}
+
+.status-note::before {
+  content: "·";
+  margin: 0 0.35rem;
+  color: rgba(148, 163, 184, 0.7);
+}
+
+.due-badge {
+  --due-color: var(--accent);
+  background: color-mix(in srgb, var(--due-color) 32%, transparent);
+  border-color: color-mix(in srgb, var(--due-color) 55%, transparent);
+  color: #f8fafc;
+  color: color-mix(in srgb, var(--due-color) 80%, #f8fafc 35%);
+}
+
+.due-badge[data-state='scheduled'],
+.due-badge[data-state='sla-active'] {
+  box-shadow: 0 6px 18px rgba(2, 6, 23, 0.35);
+}
+
+.due-badge[data-state='overdue'],
+.due-badge[data-state='sla-breached'] {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--due-color) 55%, transparent),
+    0 10px 24px rgba(127, 29, 29, 0.45);
+  color: color-mix(in srgb, var(--due-color) 85%, #fee2e2 35%);
+}
+
+.due-badge[data-state='none'] {
+  --due-color: rgba(148, 163, 184, 0.32);
+  background: rgba(148, 163, 184, 0.18);
+  border-color: rgba(148, 163, 184, 0.28);
+  color: var(--text-muted);
+  box-shadow: none;
+}
+
+.age-reference {
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.85);
+}
+
 .priority-badge {
   --priority-color: rgba(148, 163, 184, 0.25);
   --priority-text: #0f172a;
@@ -628,42 +716,6 @@ body.compact .app-footer {
 .priority-badge[data-priority]:focus {
   transform: translateY(-1px);
   box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.45), 0 12px 28px rgba(2, 6, 23, 0.45);
-}
-
-.due.sla-chip {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.25rem 0.75rem;
-  border-radius: 999px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  background: rgba(148, 163, 184, 0.18);
-  border: 1px solid rgba(148, 163, 184, 0.35);
-  color: var(--text);
-  box-shadow: 0 6px 18px rgba(2, 6, 23, 0.35);
-  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.due.sla-chip[data-sla-breached='false'] {
-  background: color-mix(in srgb, var(--ticket-accent, var(--accent)) 22%, transparent);
-  border-color: color-mix(
-    in srgb,
-    var(--ticket-accent, var(--accent)) 55%,
-    transparent
-  );
-  color: color-mix(in srgb, var(--ticket-accent, var(--accent)) 80%, #f8fafc 40%);
-}
-
-.due.sla-chip[data-sla-breached='true'] {
-  background: color-mix(in srgb, var(--danger) 32%, transparent);
-  border-color: color-mix(in srgb, var(--danger) 55%, transparent);
-  color: color-mix(in srgb, var(--danger) 80%, #fee2e2 35%);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--danger) 45%, transparent),
-    0 10px 24px rgba(127, 29, 29, 0.45);
 }
 
 .ticket-card .timestamps,
