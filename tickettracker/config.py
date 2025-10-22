@@ -31,6 +31,7 @@ DEFAULT_PRIORITY_STAGE_DAYS: Dict[str, List[int]] = {
     "Critical": [2, 3, 5, 7],
 }
 DEFAULT_PRIORITY_STAGE_DAYS_FALLBACK: List[int] = [7, 14, 21, 28]
+DEFAULT_BACKLOG_DUE_DAYS = 21
 
 
 DEFAULT_CONFIG: Dict[str, Any] = {
@@ -48,6 +49,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "sla": {
         "due_stage_days": DEFAULT_DUE_STAGE_DAYS,
         "priority_stage_days": DEFAULT_PRIORITY_STAGE_DAYS,
+        "default_due_days": DEFAULT_BACKLOG_DUE_DAYS,
     },
     "colors": {
         "gradient": {
@@ -79,6 +81,7 @@ class SLAConfig:
 
     due_stage_days: List[int] = field(default_factory=list)
     priority_stage_days: Dict[str, List[int]] = field(default_factory=dict)
+    default_due_days: Optional[int] = DEFAULT_BACKLOG_DUE_DAYS
 
     def due_thresholds(self) -> List[int]:
         """Return descending day thresholds for due-date staging."""
@@ -103,6 +106,20 @@ class SLAConfig:
 
         fallback_thresholds = _normalize_stage_values(DEFAULT_PRIORITY_STAGE_DAYS_FALLBACK)
         return _to_stage_thresholds(fallback_thresholds)
+
+    def remaining_days(self, priority: str, *, age_days: float) -> Optional[float]:
+        """Return days remaining before a backlog ticket breaches its SLA."""
+
+        thresholds = self.priority_thresholds(priority)
+        if thresholds:
+            limit = thresholds[-1]
+        else:
+            limit = self.default_due_days
+
+        if limit is None:
+            return None
+
+        return float(limit) - float(age_days)
 
 
 @dataclass
@@ -297,6 +314,12 @@ def load_config(config_path: Optional[os.PathLike[str] | str] = None) -> AppConf
             if sanitized:
                 priority_stage_days[str(priority)] = sanitized
 
+    default_due_days = _coerce_non_negative_int(sla_config.get("default_due_days"))
+    if default_due_days is None:
+        default_due_days = _coerce_non_negative_int(
+            DEFAULT_CONFIG.get("sla", {}).get("default_due_days")
+        )
+
     legacy_priority_open = sla_config.get("priority_open_days", {})
     if isinstance(legacy_priority_open, Mapping):
         for priority, value in legacy_priority_open.items():
@@ -323,6 +346,7 @@ def load_config(config_path: Optional[os.PathLike[str] | str] = None) -> AppConf
         sla=SLAConfig(
             due_stage_days=due_stage_days,
             priority_stage_days=priority_stage_days,
+            default_due_days=default_due_days,
         ),
         colors=ColorConfig(
             gradient=dict(colors_config.get("gradient", {})),

@@ -21,7 +21,8 @@
       "Medium": [10, 15, 20, 25],
       "High": [5, 7, 10, 14],
       "Critical": [2, 3, 5, 7]
-    }
+    },
+    "default_due_days": 21
   },
   "colors": {
     "gradient": {
