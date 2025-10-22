@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ ticket.title }} · TicketTracker{% endblock %}
 {% block content %}
-<article class="ticket-detail" style="--ticket-accent: {{ ticket.display_color }};">
+<article class="ticket-detail" style="--ticket-accent: {{ ticket.display_color }}; --ticket-tint: {{ ticket.tint_color }};">
   <header>
     <div class="title-group">
       <h2>{{ ticket.title }}</h2>

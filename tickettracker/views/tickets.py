@@ -83,6 +83,31 @@ def _compute_ticket_color(ticket: Ticket, config: AppConfig) -> str:
     return overdue_color
 
 
+def _compute_ticket_tint(color: str, intensity: float = 0.25) -> str:
+    """Return a translucent tint for the provided hex color."""
+
+    if not color:
+        return f"rgba(56, 189, 248, {intensity:.2f})"
+
+    color = color.strip()
+    if color.startswith("#"):
+        hex_value = color.lstrip("#")
+        if len(hex_value) == 3:
+            hex_value = "".join(component * 2 for component in hex_value)
+        if len(hex_value) == 6:
+            try:
+                red = int(hex_value[0:2], 16)
+                green = int(hex_value[2:4], 16)
+                blue = int(hex_value[4:6], 16)
+            except ValueError:
+                pass
+            else:
+                return f"rgba({red}, {green}, {blue}, {intensity:.2f})"
+
+    percent = round(intensity * 100)
+    return f"color-mix(in srgb, {color} {percent}%, transparent)"
+
+
 def _parse_tags(raw_tags: str | None) -> List[str]:
     if not raw_tags:
         return []
@@ -175,6 +200,7 @@ def list_tickets():
     tickets = query.all()
     for ticket in tickets:
         ticket.display_color = _compute_ticket_color(ticket, config)  # type: ignore[attr-defined]
+        ticket.tint_color = _compute_ticket_tint(ticket.display_color)  # type: ignore[attr-defined]
 
     available_tags = Tag.query.order_by(Tag.name).all()
 
@@ -200,6 +226,7 @@ def ticket_detail(ticket_id: int):
     config = _app_config()
     ticket = Ticket.query.get_or_404(ticket_id)
     ticket.display_color = _compute_ticket_color(ticket, config)  # type: ignore[attr-defined]
+    ticket.tint_color = _compute_ticket_tint(ticket.display_color)  # type: ignore[attr-defined]
     return render_template(
         "ticket_detail.html",
         ticket=ticket,
