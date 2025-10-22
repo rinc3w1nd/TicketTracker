@@ -22,6 +22,8 @@ def create_app(config_path: Optional[str | Path] = None) -> Flask:
     )
     app_config: AppConfig = load_config(config_path)
 
+    app.config["SECRET_KEY"] = app_config.secret_key
+
     app.config["SQLALCHEMY_DATABASE_URI"] = app_config.database_uri
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["UPLOAD_FOLDER"] = str(app_config.uploads_path)

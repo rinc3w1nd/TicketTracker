@@ -1,4 +1,5 @@
 {
+  "secret_key": "dev-secret-key-change-me",
   "database": {
     "uri": "sqlite:///tickettracker.db"
   },

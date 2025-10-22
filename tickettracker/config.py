@@ -9,7 +9,11 @@ from typing import Any, Dict, List, Mapping, MutableMapping, Optional
 
 DEFAULT_CONFIG_NAME = "config.json"
 
+DEFAULT_SECRET_KEY = "dev-secret-key-change-me"
+
+
 DEFAULT_CONFIG: Dict[str, Any] = {
+    "secret_key": DEFAULT_SECRET_KEY,
     "database": {"uri": "sqlite:///tickettracker.db"},
     "uploads": {"directory": "uploads"},
     "priorities": ["Low", "Medium", "High", "Urgent"],
@@ -74,6 +78,7 @@ class ColorConfig:
 class AppConfig:
     """Runtime configuration for the TicketTracker application."""
 
+    secret_key: str
     database_uri: str
     uploads_directory: Path
     priorities: List[str]
@@ -146,8 +151,10 @@ def load_config(config_path: Optional[os.PathLike[str] | str] = None) -> AppConf
 
     database_uri = _resolve_database_uri(merged.get("database", {}).get("uri", "sqlite:///tickettracker.db"), base_path)
     uploads_directory = _resolve_upload_directory(merged.get("uploads", {}).get("directory", "uploads"), base_path)
+    secret_key = os.environ.get("TICKETTRACKER_SECRET_KEY") or str(merged.get("secret_key", DEFAULT_SECRET_KEY))
 
     return AppConfig(
+        secret_key=secret_key,
         database_uri=database_uri,
         uploads_directory=uploads_directory,
         priorities=list(merged.get("priorities", [])),

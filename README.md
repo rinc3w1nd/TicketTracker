@@ -81,6 +81,7 @@ Runtime behaviour is driven by `config.json` in the project root. The file contr
 - workflow statuses, priorities, and hold reasons
 - SLA timing thresholds used for ticket colouring
 - palette overrides for statuses, priorities, and tag chips
+- Flask session secret (`secret_key`). For production deployments set the `TICKETTRACKER_SECRET_KEY` environment variable to override the value stored in the JSON file.
 
 You can provide a different configuration by setting `TICKETTRACKER_CONFIG` to an alternate JSON file path before starting the app.
 
