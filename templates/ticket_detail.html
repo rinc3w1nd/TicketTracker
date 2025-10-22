@@ -132,7 +132,10 @@
           <div class="timeline-point"></div>
           <div class="timeline-content">
             <div class="update-meta">
-              <span class="author">{{ update.author or 'System' }}</span>
+              <span class="author">
+                Submitted By:
+                {{ 'System' if update.is_system else (update.author or config.default_submitted_by) }}
+              </span>
               <span class="timestamp">{{ update.created_at.strftime('%b %d, %Y %H:%M') }}</span>
               {% if update.status_from or update.status_to %}
                 <span class="status-change">{{ update.status_from or '—' }} → {{ update.status_to or '—' }}</span>
@@ -173,8 +176,14 @@
     </div>
     <div class="field-group split">
       <div>
-        <label for="author">Author</label>
-        <input type="text" id="author" name="author" placeholder="Optional" />
+        <label for="submitted_by">Submitted By</label>
+        <input
+          type="text"
+          id="submitted_by"
+          name="submitted_by"
+          placeholder="Submitted By (defaults to {{ config.default_submitted_by }})"
+          value="{{ config.default_submitted_by }}"
+        />
       </div>
       <div>
         <label for="status">Status</label>

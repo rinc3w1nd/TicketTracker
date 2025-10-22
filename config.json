@@ -6,6 +6,7 @@
   "uploads": {
     "directory": "uploads"
   },
+  "default_submitted_by": "Support Team",
   "priorities": ["Low", "Medium", "High", "Critical"],
   "hold_reasons": [
     "Awaiting customer response",
