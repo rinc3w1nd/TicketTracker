@@ -1,0 +1,56 @@
+{% if 'header' in sections %}
+Ticket #{{ ticket.id }} · {{ ticket.title }}
+Created: {{ ticket.created_at.strftime('%b %d, %Y %H:%M') if ticket.created_at else '—' }}
+Updated: {{ ticket.updated_at.strftime('%b %d, %Y %H:%M') if ticket.updated_at else '—' }}
+{% if ticket_url %}Link: {{ ticket_url }}
+{% endif %}
+
+{% endif %}
+{% if 'meta' in sections %}
+Status: {{ ticket.status }}
+Priority: {{ ticket.priority }}
+Due: {{ ticket.due_badge_label }}
+{% if ticket.sla_countdown %}SLA: {{ ticket.sla_countdown }}
+{% endif %}
+
+{% endif %}
+{% if 'people' in sections and (ticket.requester or ticket.watchers) %}
+{% if ticket.requester %}Requester: {{ ticket.requester }}
+{% endif %}
+{% if ticket.watchers %}Watchers: {{ ticket.watchers|join(', ') }}
+{% endif %}
+
+{% endif %}
+{% if 'description' in sections and ticket.description %}
+Description:
+{% for line in ticket.description.splitlines() %}  {{ line }}
+{% endfor %}
+
+{% endif %}
+{% if 'links' in sections and ticket.links %}
+Links:
+{% for line in ticket.links.splitlines() %}  {{ line }}
+{% endfor %}
+
+{% endif %}
+{% if 'notes' in sections and ticket.notes %}
+Notes:
+{% for line in ticket.notes.splitlines() %}  {{ line }}
+{% endfor %}
+
+{% endif %}
+{% if 'tags' in sections and ticket.tags %}
+Tags: {{ ticket.tags|map(attribute='name')|join(', ') }}
+
+{% endif %}
+{% if 'updates' in sections and updates %}
+Recent Updates:
+{% for update in updates %}- {{ update.created_at.strftime('%b %d, %Y %H:%M') }} by {{ 'System' if update.is_system else (update.author or config.default_submitted_by) }}
+{% if update.status_from or update.status_to %}  Status: {{ update.status_from or '—' }} → {{ update.status_to or '—' }}
+{% endif %}{% for line in update.body.splitlines() %}
+  {{ line }}
+{% endfor %}
+{% if not loop.last %}
+
+{% endif %}{% endfor %}
+{% endif %}

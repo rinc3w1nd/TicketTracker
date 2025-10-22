@@ -50,5 +50,28 @@
       "background": "#1e293b",
       "text": "#e2e8f0"
     }
+  },
+  "clipboard_summary": {
+    "html_sections": [
+      "header",
+      "meta",
+      "people",
+      "description",
+      "links",
+      "notes",
+      "tags",
+      "updates"
+    ],
+    "text_sections": [
+      "header",
+      "meta",
+      "people",
+      "description",
+      "links",
+      "notes",
+      "tags",
+      "updates"
+    ],
+    "updates_limit": 1
   }
 }
