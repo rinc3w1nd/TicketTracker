@@ -1,4 +1,9 @@
 {% extends "base.html" %}
+
+{% block extra_styles %}
+  {{ super() }}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/ticket-tooltips.css') }}" />
+{% endblock %}
 {% block title %}Tickets · TicketTracker{% endblock %}
 {% block content %}
 {% set is_compact = compact_mode|default(true) %}
@@ -117,10 +122,13 @@
         data-overdue="{{ 'true' if ticket.is_overdue else 'false' }}"
         style="--ticket-accent: {{ ticket.display_color }}; --ticket-tint: {{ ticket.tint_color }};"
         {% if is_compact and ticket.compact_tooltip %}
-          title="{{ ticket.compact_tooltip }}"
-          aria-label="{{ ticket.compact_tooltip }}"
+          data-ticket-tooltip-trigger
+          data-tooltip-id="ticket-tooltip-{{ ticket.id }}"
+          aria-describedby="ticket-tooltip-{{ ticket.id }}"
+          tabindex="-1"
         {% endif %}
       >
+        {% set tooltip = ticket.compact_tooltip %}
         <header>
           <div class="title-group">
             <h2 class="ticket-title">
@@ -242,6 +250,79 @@
           <span>{{ ticket.updates|length }} updates</span>
           <span>{{ ticket.attachments|length }} attachments</span>
         </footer>
+        {% if is_compact and tooltip %}
+          <div
+            class="ticket-tooltip"
+            id="ticket-tooltip-{{ ticket.id }}"
+            data-ticket-tooltip
+            role="dialog"
+            aria-modal="false"
+            aria-hidden="true"
+            aria-labelledby="ticket-tooltip-title-{{ ticket.id }}"
+            hidden
+          >
+            <div class="ticket-tooltip__surface" data-tooltip-surface tabindex="-1">
+              <header class="ticket-tooltip__header">
+                <h3 class="ticket-tooltip__title" id="ticket-tooltip-title-{{ ticket.id }}">Quick ticket info</h3>
+                <button type="button" class="ticket-tooltip__close" data-tooltip-close aria-label="Close quick info">
+                  <span aria-hidden="true">×</span>
+                </button>
+              </header>
+              {% if tooltip.requester or tooltip.watchers %}
+                <dl class="ticket-tooltip__meta">
+                  {% if tooltip.requester %}
+                    <div class="ticket-tooltip__item">
+                      <dt>Requester</dt>
+                      <dd>{{ tooltip.requester }}</dd>
+                    </div>
+                  {% endif %}
+                  {% if tooltip.watchers %}
+                    <div class="ticket-tooltip__item">
+                      <dt>Watchers</dt>
+                      <dd>{{ tooltip.watchers|join(', ') }}</dd>
+                    </div>
+                  {% endif %}
+                </dl>
+              {% endif %}
+              {% if tooltip.links %}
+                <div class="ticket-tooltip__section">
+                  <h4>Links</h4>
+                  <ul class="ticket-tooltip__links">
+                    {% for link in tooltip.links %}
+                      <li>
+                        {% if link.href %}
+                          <a
+                            href="{{ link.href }}"
+                            {% if link.is_external %}target="_blank" rel="noreferrer noopener"{% endif %}
+                          >
+                            {{ link.label }}
+                          </a>
+                        {% else %}
+                          <span>{{ link.label }}</span>
+                        {% endif %}
+                      </li>
+                    {% endfor %}
+                  </ul>
+                </div>
+              {% endif %}
+              {% if tooltip.attachments %}
+                <div class="ticket-tooltip__section">
+                  <h4>Attachments</h4>
+                  <ul class="ticket-tooltip__attachments">
+                    {% for attachment in tooltip.attachments %}
+                      <li>
+                        <a href="{{ attachment.download_url }}">{{ attachment.display_name }}</a>
+                        {% if attachment.meta %}
+                          <span class="ticket-tooltip__attachment-meta">{{ attachment.meta }}</span>
+                        {% endif %}
+                      </li>
+                    {% endfor %}
+                  </ul>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        {% endif %}
         <div class="clipboard-fallback" data-clipboard-fallback hidden>
           <p>Clipboard access isn't available. Select and copy the summary below.</p>
           <div class="clipboard-preview" data-clipboard-preview></div>
@@ -337,5 +418,6 @@
 
 {% block scripts %}
   {{ super() }}
+  <script type="module" src="{{ url_for('static', filename='js/ticket-tooltips.js') }}"></script>
   <script type="module" src="{{ url_for('static', filename='js/clipboard.js') }}"></script>
 {% endblock %}
