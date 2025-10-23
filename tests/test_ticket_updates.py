@@ -259,3 +259,111 @@ def test_edit_ticket_redirects_to_list_when_enabled(make_app_with_ticket):
     location = urlparse(response.headers["Location"])
     assert location.path == "/"
     assert parse_qs(location.query).get("compact") == ["1"]
+
+
+def test_delete_attachment_cleans_file(make_app_with_ticket):
+    app, uploads_path, ticket_id = make_app_with_ticket()
+    client = app.test_client()
+
+    initial_upload = {
+        "message": "",
+        "submitted_by": "",
+        "status": "Open",
+        "attachments": [
+            (io.BytesIO(b"unique payload"), "unique.txt"),
+            (io.BytesIO(b"shared payload"), "shared.txt"),
+        ],
+    }
+
+    duplicate_upload = {
+        "message": "",
+        "submitted_by": "",
+        "status": "Open",
+        "attachments": [(io.BytesIO(b"shared payload"), "shared-second.txt")],
+    }
+
+    response = client.post(
+        f"/tickets/{ticket_id}/updates",
+        data=initial_upload,
+        content_type="multipart/form-data",
+    )
+    assert response.status_code == 302
+
+    response = client.post(
+        f"/tickets/{ticket_id}/updates",
+        data=duplicate_upload,
+        content_type="multipart/form-data",
+    )
+    assert response.status_code == 302
+
+    with app.app_context():
+        attachments = (
+            Attachment.query.filter_by(ticket_id=ticket_id)
+            .order_by(Attachment.id.asc())
+            .all()
+        )
+        assert len(attachments) == 3
+
+        by_name = {attachment.original_filename: attachment for attachment in attachments}
+        unique_attachment = by_name["unique.txt"]
+        shared_first = by_name["shared.txt"]
+        shared_second = by_name["shared-second.txt"]
+
+        unique_path = uploads_path / unique_attachment.stored_filename
+        shared_path = uploads_path / shared_first.stored_filename
+
+        assert unique_path.exists()
+        assert shared_path.exists()
+        assert shared_first.stored_filename == shared_second.stored_filename
+        assert shared_first.checksum == shared_second.checksum
+
+    response = client.post(
+        f"/attachments/{unique_attachment.id}/delete?compact=1",
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith(f"/tickets/{ticket_id}?compact=1")
+
+    with client.session_transaction() as session:
+        flashes = session.get("_flashes", [])
+    assert flashes[-1] == ("success", "Attachment deleted.")
+
+    with app.app_context():
+        assert Attachment.query.get(unique_attachment.id) is None
+        assert not unique_path.exists()
+        assert Attachment.query.get(shared_first.id) is not None
+        assert Attachment.query.get(shared_second.id) is not None
+        assert shared_path.exists()
+
+    response = client.post(
+        f"/attachments/{shared_first.id}/delete?compact=1",
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+
+    with client.session_transaction() as session:
+        flashes = session.get("_flashes", [])
+    assert flashes[-1] == (
+        "info",
+        "Attachment deleted. File is still used by other attachments.",
+    )
+
+    with app.app_context():
+        assert Attachment.query.get(shared_first.id) is None
+        remaining = Attachment.query.get(shared_second.id)
+        assert remaining is not None
+        assert shared_path.exists()
+
+    response = client.post(
+        f"/attachments/{shared_second.id}/delete?compact=1",
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+
+    with client.session_transaction() as session:
+        flashes = session.get("_flashes", [])
+    assert flashes[-1] == ("success", "Attachment deleted.")
+
+    with app.app_context():
+        assert Attachment.query.get(shared_second.id) is None
+        assert not shared_path.exists()

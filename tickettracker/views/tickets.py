@@ -929,6 +929,94 @@ def add_update(ticket_id: int):
     return redirect(url_for(redirect_endpoint, **redirect_kwargs))
 
 
+@tickets_bp.route("/attachments/<int:attachment_id>/delete", methods=["POST"])
+def delete_attachment(attachment_id: int):
+    attachment = Attachment.query.get_or_404(attachment_id)
+    compact_mode = _is_compact_mode()
+
+    ticket_id = attachment.ticket_id
+    stored_filename = attachment.stored_filename
+    checksum = attachment.checksum
+    upload_root = Path(current_app.config["UPLOAD_FOLDER"])
+    file_path = upload_root / stored_filename if stored_filename else None
+
+    combined_filter = None
+    if stored_filename:
+        combined_filter = Attachment.stored_filename == stored_filename
+    if checksum:
+        checksum_filter = Attachment.checksum == checksum
+        if combined_filter is None:
+            combined_filter = checksum_filter
+        else:
+            combined_filter = or_(combined_filter, checksum_filter)
+
+    shared_exists = False
+    if combined_filter is not None:
+        shared_exists = (
+            Attachment.query.filter(Attachment.id != attachment_id)
+            .filter(combined_filter)
+            .first()
+            is not None
+        )
+
+    db.session.delete(attachment)
+    try:
+        db.session.commit()
+    except Exception:  # pragma: no cover - defensive guard
+        current_app.logger.exception("Failed to delete attachment %s", attachment_id)
+        db.session.rollback()
+        flash("Unable to delete attachment.", "error")
+        return redirect(
+            url_for(
+                "tickets.ticket_detail",
+                ticket_id=ticket_id,
+                compact=_compact_query_value(compact_mode),
+            )
+        )
+
+    file_missing = False
+    unlink_error = False
+    if not shared_exists and file_path:
+        try:
+            file_path.unlink()
+        except FileNotFoundError:
+            file_missing = True
+        except OSError:
+            unlink_error = True
+            current_app.logger.warning(
+                "Unable to remove attachment file %s for attachment %s",
+                file_path,
+                attachment_id,
+                exc_info=True,
+            )
+
+    if shared_exists:
+        flash(
+            "Attachment deleted. File is still used by other attachments.",
+            "info",
+        )
+    elif unlink_error:
+        flash(
+            "Attachment deleted, but the file could not be removed.",
+            "warning",
+        )
+    elif file_missing:
+        flash(
+            "Attachment deleted, but the file was missing on disk.",
+            "warning",
+        )
+    else:
+        flash("Attachment deleted.", "success")
+
+    return redirect(
+        url_for(
+            "tickets.ticket_detail",
+            ticket_id=ticket_id,
+            compact=_compact_query_value(compact_mode),
+        )
+    )
+
+
 @tickets_bp.route("/attachments/<int:attachment_id>")
 def download_attachment(attachment_id: int):
     attachment = Attachment.query.get_or_404(attachment_id)
