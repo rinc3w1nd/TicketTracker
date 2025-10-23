@@ -142,6 +142,8 @@ class Attachment(db.Model):
     stored_filename: Mapped[str] = mapped_column(db.String(255), nullable=False)
     mimetype: Mapped[str | None] = mapped_column(db.String(128))
     size: Mapped[int | None] = mapped_column(db.Integer)
+    checksum: Mapped[str | None] = mapped_column(db.String(64))
+    file_uuid: Mapped[str | None] = mapped_column(db.String(36))
     uploaded_at: Mapped[datetime] = mapped_column(db.DateTime, default=datetime.utcnow, nullable=False)
 
     ticket: Mapped[Ticket] = relationship("Ticket", back_populates="attachments")
