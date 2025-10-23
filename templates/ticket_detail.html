@@ -243,11 +243,44 @@
         {% endfor %}
       </select>
     </div>
-    <div class="field-group">
-      <label for="attachments">Attachments</label>
-      <input type="file" id="attachments" name="attachments" multiple />
-      <p class="help">Files are stored locally inside <code>{{ app_config.uploads_path }}</code>.</p>
-    </div>
+    <details class="attachment-collapsible" data-attachment-collapsible>
+      <summary class="attachment-toggle">
+        <span class="attachment-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+            <path
+              d="M16.5 6.5v8a4.5 4.5 0 1 1-9 0V5a3.5 3.5 0 0 1 7 0v9a2.5 2.5 0 1 1-5 0V6.5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            ></path>
+          </svg>
+        </span>
+        <span class="attachment-toggle-text">
+          <span class="attachment-toggle-state attachment-toggle-state--closed">Add attachments</span>
+          <span class="attachment-toggle-state attachment-toggle-state--open">Hide attachments</span>
+        </span>
+        <span class="attachment-summary-count" data-attachment-count aria-live="polite" hidden></span>
+      </summary>
+      <div class="attachment-fields">
+        <div class="field-group">
+          <label for="attachments">Attachments</label>
+          <input
+            type="file"
+            id="attachments"
+            name="attachments"
+            multiple
+            aria-describedby="update-attachments-help"
+            data-attachment-input
+          />
+          <p class="help" id="update-attachments-help">
+            Files upload to <code>{{ app_config.uploads_path }}</code> when you submit this update.
+            Select as many files as you need in a single step.
+          </p>
+        </div>
+      </div>
+    </details>
     <div class="actions">
       <button type="submit" class="button primary">Add update</button>
       {% if not ticket.due_date %}
@@ -274,6 +307,39 @@
     updateStatusSelect.addEventListener('change', updateToggleHold);
     updateToggleHold();
   }
+
+  const formatAttachmentCount = (count) => `${count} file${count === 1 ? '' : 's'} selected`;
+  const attachmentDetails = document.querySelectorAll('[data-attachment-collapsible]');
+  attachmentDetails.forEach((details) => {
+    const input = details.querySelector('[data-attachment-input]');
+    const count = details.querySelector('[data-attachment-count]');
+
+    if (!input) return;
+
+    const updateAttachmentState = () => {
+      const files = input.files ? input.files.length : 0;
+      if (files > 0) {
+        details.dataset.hasFiles = 'true';
+        if (count) {
+          count.hidden = false;
+          count.textContent = formatAttachmentCount(files);
+        }
+        if (!details.open) {
+          details.open = true;
+        }
+      } else {
+        delete details.dataset.hasFiles;
+        if (count) {
+          count.hidden = true;
+          count.textContent = '';
+        }
+      }
+    };
+
+    input.addEventListener('change', updateAttachmentState);
+    input.addEventListener('input', updateAttachmentState);
+    updateAttachmentState();
+  });
 </script>
 {% endblock %}
 
