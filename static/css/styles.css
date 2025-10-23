@@ -740,6 +740,30 @@ body.compact .filter-fields .filter-actions {
   gap: 1.5rem;
 }
 
+.ticket-surface {
+  position: relative;
+}
+
+.ticket-surface::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid var(--ticket-accent, var(--accent));
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.ticket-surface:focus-visible,
+.ticket-surface:focus-within {
+  outline: 2px solid color-mix(
+      in srgb,
+      var(--ticket-accent, var(--accent)) 70%,
+      transparent 30%
+    );
+  outline-offset: 4px;
+}
+
 .ticket-card {
   background: linear-gradient(
     145deg,
@@ -750,28 +774,7 @@ body.compact .filter-fields .filter-actions {
   border-radius: 1.5rem;
   padding: 1.5rem;
   border: 1px solid rgba(148, 163, 184, 0.08);
-  position: relative;
   overflow: hidden;
-}
-
-.ticket-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  border: 2px solid var(--ticket-accent, var(--accent));
-  opacity: 0.35;
-  pointer-events: none;
-}
-
-.ticket-card[data-overdue='true'] {
-  --ticket-glow: color-mix(in srgb, var(--ticket-accent, var(--accent)) 70%, transparent);
-  box-shadow: 0 0 0 2px var(--ticket-glow), 0 0 34px var(--ticket-glow);
-}
-
-.ticket-card[data-overdue='true']::before {
-  border-width: 4px;
-  opacity: 0.7;
 }
 
 .ticket-card header,
@@ -1117,27 +1120,6 @@ body.compact .filter-fields .filter-actions {
   border-radius: 1.75rem;
   border: 1px solid rgba(148, 163, 184, 0.1);
   margin-bottom: 2rem;
-  position: relative;
-}
-
-.ticket-detail::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  border: 3px solid var(--ticket-accent, rgba(56, 189, 248, 0.6));
-  opacity: 0.2;
-  pointer-events: none;
-}
-
-.ticket-detail[data-overdue='true'] {
-  --ticket-glow: color-mix(in srgb, var(--ticket-accent, rgba(56, 189, 248, 0.8)) 70%, transparent);
-  box-shadow: 0 0 0 3px var(--ticket-glow), 0 0 48px var(--ticket-glow);
-}
-
-.ticket-detail[data-overdue='true']::before {
-  border-width: 5px;
-  opacity: 0.55;
 }
 
 .detail-grid {
