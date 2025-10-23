@@ -64,21 +64,32 @@ a:hover {
   position: sticky;
   top: 0;
   z-index: 10;
+  flex-wrap: wrap;
+  gap: 1.5rem;
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 1.25rem;
+  min-width: 0;
 }
 
 .brand .logo {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.75rem;
-  height: 2.75rem;
+  width: 8.25rem;
+  height: 8.25rem;
   flex-shrink: 0;
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.25rem;
+  min-width: 0;
 }
 
 .brand .logo img,
@@ -93,6 +104,69 @@ a:hover {
   margin: 0;
   color: var(--text-muted);
   font-size: 0.75rem;
+}
+
+@media (max-width: 1024px) {
+  .brand .logo {
+    width: 7rem;
+    height: 7rem;
+  }
+
+  body.compact .brand .logo {
+    width: 5.75rem;
+    height: 5.75rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1.75rem;
+  }
+
+  .brand {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .brand .logo {
+    width: 6rem;
+    height: 6rem;
+  }
+
+  body.compact .brand .logo {
+    width: 5rem;
+    height: 5rem;
+  }
+
+  .brand-text {
+    text-align: left;
+  }
+
+  .nav-links {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 480px) {
+  .brand .logo {
+    width: 5rem;
+    height: 5rem;
+  }
+
+  body.compact .brand .logo {
+    width: 4.25rem;
+    height: 4.25rem;
+  }
+
+  .nav-links {
+    flex-wrap: wrap;
+    row-gap: 0.75rem;
+    justify-content: flex-start;
+    column-gap: 0.5rem;
+  }
 }
 
 .nav-links {
@@ -208,8 +282,12 @@ body.compact .app-header {
 }
 
 body.compact .brand .logo {
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 6.75rem;
+  height: 6.75rem;
+}
+
+body.compact .brand {
+  gap: 1rem;
 }
 
 body.compact .nav-links {
@@ -1348,6 +1426,39 @@ body.compact .filter-fields .filter-actions {
   margin: 0;
   color: var(--text-muted);
   font-size: 0.85rem;
+}
+
+.clipboard-preview {
+  border-radius: 1rem;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: linear-gradient(
+    155deg,
+    var(--ticket-tint, rgba(56, 189, 248, 0.28)),
+    rgba(15, 23, 42, 0.82)
+  );
+  padding: 1rem;
+  color: var(--text);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.35);
+  overflow: auto;
+}
+
+.clipboard-preview.is-plain {
+  white-space: pre-wrap;
+}
+
+.clipboard-fallback-manual {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.clipboard-fallback-label {
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
 }
 
 .clipboard-fallback-text {
