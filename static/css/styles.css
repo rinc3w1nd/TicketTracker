@@ -1014,6 +1014,11 @@ body.compact .filter-fields .filter-actions {
   align-items: flex-start;
 }
 
+.field-group--inline .field-group__meta,
+.field-group--inline .field-group__control {
+  min-width: 0;
+}
+
 .field-group--inline .field-group__control {
   display: flex;
   align-items: center;
