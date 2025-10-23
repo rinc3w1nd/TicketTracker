@@ -983,6 +983,92 @@ body.compact .filter-fields .filter-actions {
   display: none;
 }
 
+.color-settings .color-palette {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.color-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.color-section h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #f8fafc;
+}
+
+.color-section-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.color-entry {
+  background: rgba(15, 23, 42, 0.45);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.color-entry-label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.9rem;
+  color: rgba(248, 250, 252, 0.9);
+}
+
+.color-chip {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.6) inset;
+}
+
+.color-entry-inputs {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.color-entry-inputs input[type="color"] {
+  border: none;
+  padding: 0;
+  width: 3rem;
+  height: 2.25rem;
+  background: transparent;
+  cursor: pointer;
+}
+
+.color-entry-inputs input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.color-entry-inputs input[type="color"]::-webkit-color-swatch {
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 0.5rem;
+}
+
+.color-entry-inputs input[type="color"]::-moz-color-swatch {
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 0.5rem;
+}
+
+.color-hex-input {
+  flex: 1 1 8ch;
+  min-width: 0;
+  text-transform: uppercase;
+}
+
 .tag-mode {
   display: flex;
   gap: 1rem;

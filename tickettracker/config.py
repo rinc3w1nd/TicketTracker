@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import math
 import os
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Mapping, MutableMapping, Optional
@@ -17,14 +18,56 @@ DEFAULT_SUBMITTED_BY = "Support Team"
 GRADIENT_STAGE_ORDER: List[str] = ["stage0", "stage1", "stage2", "stage3"]
 GRADIENT_OVERDUE_KEY = "overdue"
 DEFAULT_GRADIENT_COLORS: Dict[str, str] = {
-    "stage0": "#bae6fd",
-    "stage1": "#fde047",
-    "stage2": "#fb923c",
-    "stage3": "#ef4444",
-    GRADIENT_OVERDUE_KEY: "#7f1d1d",
+    "stage0": "#BAE6FD",
+    "stage1": "#FDE047",
+    "stage2": "#FB923C",
+    "stage3": "#EF4444",
+    GRADIENT_OVERDUE_KEY: "#7F1D1D",
 }
 
-DEFAULT_TICKET_TITLE_COLOR = "#f8fafc"
+DEFAULT_TICKET_TITLE_COLOR = "#F8FAFC"
+
+DEFAULT_STATUS_COLORS: Dict[str, str] = {
+    "on_hold": "#9C88FF",
+    "resolved": "#2ED573",
+    "closed": "#57606F",
+    "cancelled": "#747D8C",
+}
+
+DEFAULT_PRIORITY_COLORS: Dict[str, str] = {
+    "Low": "#3B82F6",
+    "Medium": "#FACC15",
+    "High": "#F97316",
+    "Critical": "#EF4444",
+}
+
+DEFAULT_TAG_COLORS: Dict[str, str] = {
+    "background": "#2F3542",
+    "text": "#F1F2F6",
+}
+
+
+_HEX_COLOR_PATTERN = re.compile(r"^#?(?P<value>[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$")
+
+
+def normalize_hex_color(value: Any) -> Optional[str]:
+    """Return an uppercase ``#RRGGBB`` color string if ``value`` is valid."""
+
+    if value is None:
+        return None
+
+    text = str(value).strip()
+    if not text:
+        return None
+
+    match = _HEX_COLOR_PATTERN.match(text)
+    if not match:
+        return None
+
+    hex_value = match.group("value").upper()
+    if len(hex_value) == 3:
+        hex_value = "".join(ch * 2 for ch in hex_value)
+    return f"#{hex_value}"
 
 DEFAULT_DUE_STAGE_DAYS: List[int] = [28, 21, 14, 7]
 DEFAULT_PRIORITY_STAGE_DAYS: Dict[str, List[int]] = {
@@ -77,25 +120,10 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     },
     "colors": {
         "ticket_title": DEFAULT_TICKET_TITLE_COLOR,
-        "gradient": {
-            **DEFAULT_GRADIENT_COLORS,
-        },
-        "statuses": {
-            "on_hold": "#9c88ff",
-            "resolved": "#2ed573",
-            "closed": "#57606f",
-            "cancelled": "#747d8c",
-        },
-        "priorities": {
-            "Low": "#3b82f6",
-            "Medium": "#facc15",
-            "High": "#f97316",
-            "Critical": "#ef4444",
-        },
-        "tags": {
-            "background": "#2f3542",
-            "text": "#f1f2f6",
-        },
+        "gradient": dict(DEFAULT_GRADIENT_COLORS),
+        "statuses": dict(DEFAULT_STATUS_COLORS),
+        "priorities": dict(DEFAULT_PRIORITY_COLORS),
+        "tags": dict(DEFAULT_TAG_COLORS),
     },
     "clipboard_summary": DEFAULT_CLIPBOARD_SUMMARY,
     "behavior": {
@@ -174,9 +202,18 @@ class ColorConfig:
     ticket_title: str = DEFAULT_TICKET_TITLE_COLOR
 
     def gradient_color(self, key: str) -> str:
-        if key in DEFAULT_GRADIENT_COLORS:
-            return self.gradient.get(key, DEFAULT_GRADIENT_COLORS[key])
-        return self.gradient.get(key, DEFAULT_GRADIENT_COLORS[GRADIENT_STAGE_ORDER[0]])
+        fallback = DEFAULT_GRADIENT_COLORS.get(
+            key, DEFAULT_GRADIENT_COLORS[GRADIENT_STAGE_ORDER[0]]
+        )
+        normalized = normalize_hex_color(self.gradient.get(key))
+        if normalized:
+            return normalized
+        default_value = DEFAULT_GRADIENT_COLORS.get(key)
+        if default_value:
+            normalized_default = normalize_hex_color(default_value)
+            if normalized_default:
+                return normalized_default
+        return fallback
 
     def gradient_stage_color(self, stage_index: int) -> str:
         bounded_index = max(0, min(stage_index, len(GRADIENT_STAGE_ORDER) - 1))
@@ -187,8 +224,11 @@ class ColorConfig:
         return self.gradient_color(GRADIENT_OVERDUE_KEY)
 
     def ticket_title_color(self) -> str:
-        value = str(self.ticket_title or "").strip()
-        return value or DEFAULT_TICKET_TITLE_COLOR
+        normalized = normalize_hex_color(self.ticket_title)
+        if normalized:
+            return normalized
+        default_value = normalize_hex_color(DEFAULT_TICKET_TITLE_COLOR)
+        return default_value or DEFAULT_TICKET_TITLE_COLOR
 
     def to_dict(self) -> Dict[str, Any]:
         """Return a JSON-serializable representation of the color palette."""
@@ -543,13 +583,12 @@ def load_config(config_path: Optional[os.PathLike[str] | str] = None) -> AppConf
     uploads_directory = _resolve_upload_directory(merged.get("uploads", {}).get("directory", "uploads"), base_path)
     secret_key = os.environ.get("TICKETTRACKER_SECRET_KEY") or str(merged.get("secret_key", DEFAULT_SECRET_KEY))
 
-    raw_ticket_title_color = colors_config.get("ticket_title", DEFAULT_TICKET_TITLE_COLOR)
-    if isinstance(raw_ticket_title_color, str):
-        ticket_title_color = raw_ticket_title_color.strip() or DEFAULT_TICKET_TITLE_COLOR
-    elif raw_ticket_title_color is None:
-        ticket_title_color = DEFAULT_TICKET_TITLE_COLOR
-    else:
-        ticket_title_color = str(raw_ticket_title_color).strip() or DEFAULT_TICKET_TITLE_COLOR
+    ticket_title_color = normalize_hex_color(colors_config.get("ticket_title"))
+    if ticket_title_color is None:
+        ticket_title_color = (
+            normalize_hex_color(DEFAULT_TICKET_TITLE_COLOR)
+            or DEFAULT_TICKET_TITLE_COLOR
+        )
 
     html_sections = _coerce_string_list(
         clipboard_summary_config.get("html_sections")
