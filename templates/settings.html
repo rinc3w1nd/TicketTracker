@@ -74,18 +74,23 @@
           fall back to defaults.
         </p>
 
-        <div class="field-group">
-          <label for="default_due_days">Default backlog due days</label>
-          <input
-            type="number"
-            id="default_due_days"
-            name="default_due_days"
-            min="0"
-            value="{{ form.default_due_days|default('') }}"
-          />
-          <p class="help">
-            Used when a priority does not specify custom backlog stage thresholds.
-          </p>
+        <div class="field-group field-group--inline">
+          <div class="field-group__meta">
+            <label for="default_due_days">Default backlog due days</label>
+            <p class="help" id="default_due_days_help">
+              Used when a priority does not specify custom backlog stage thresholds.
+            </p>
+          </div>
+          <div class="field-group__control">
+            <input
+              type="number"
+              id="default_due_days"
+              name="default_due_days"
+              min="0"
+              value="{{ form.default_due_days|default('') }}"
+              aria-describedby="default_due_days_help"
+            />
+          </div>
         </div>
 
         <div class="sla-stage-group">
