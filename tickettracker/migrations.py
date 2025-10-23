@@ -5,7 +5,9 @@ from pathlib import Path
 from typing import Dict, Tuple
 
 from flask import current_app
-from sqlalchemy import inspect, text
+
+from sqlalchemy import inspect, select, text
+from sqlalchemy.orm import Session
 
 from .extensions import db
 from .utils.uploads import compute_file_sha256, generate_uuid7
@@ -57,52 +59,48 @@ def _ensure_attachment_metadata(engine, inspector) -> None:
                     text("ALTER TABLE attachments ADD COLUMN file_uuid VARCHAR(36)")
                 )
 
-    _backfill_attachment_metadata()
+    _backfill_attachment_metadata(engine)
 
 
-def _backfill_attachment_metadata() -> None:
+def _backfill_attachment_metadata(engine) -> None:
     from .models import Attachment
 
-    session = db.session
     upload_root = Path(current_app.config["UPLOAD_FOLDER"])
 
-    attachments = (
-        session.query(Attachment)
-        .order_by(Attachment.id.asc())
-        .all()
-    )
-    if not attachments:
-        return
+    with Session(engine) as session:
+        attachments = session.scalars(
+            select(Attachment).order_by(Attachment.id.asc())
+        )
 
-    canonical: Dict[str, Tuple[str, str]] = {}
-    dirty = False
+        canonical: Dict[str, Tuple[str, str]] = {}
+        dirty = False
 
-    for attachment in attachments:
-        stored_filename = attachment.stored_filename
-        if not stored_filename:
-            continue
+        for attachment in attachments:
+            stored_filename = attachment.stored_filename
+            if not stored_filename:
+                continue
 
-        file_path = upload_root / stored_filename
-        if not file_path.exists():
-            continue
+            file_path = upload_root / stored_filename
+            if not file_path.exists():
+                continue
 
-        checksum = attachment.checksum
-        if not checksum:
-            checksum = compute_file_sha256(file_path)
-            attachment.checksum = checksum
-            dirty = True
+            checksum = attachment.checksum
+            if not checksum:
+                checksum = compute_file_sha256(file_path)
+                attachment.checksum = checksum
+                dirty = True
 
-        canonical_entry = canonical.get(checksum)
-        if canonical_entry is None:
-            file_uuid = attachment.file_uuid or generate_uuid7()
-            canonical_entry = (file_uuid, stored_filename)
-            canonical[checksum] = canonical_entry
+            canonical_entry = canonical.get(checksum)
+            if canonical_entry is None:
+                file_uuid = attachment.file_uuid or generate_uuid7()
+                canonical_entry = (file_uuid, stored_filename)
+                canonical[checksum] = canonical_entry
 
-        file_uuid = canonical_entry[0]
-        if attachment.file_uuid != file_uuid:
-            attachment.file_uuid = file_uuid
-            dirty = True
+            file_uuid = canonical_entry[0]
+            if attachment.file_uuid != file_uuid:
+                attachment.file_uuid = file_uuid
+                dirty = True
 
-    if dirty:
-        session.commit()
+        if dirty:
+            session.commit()
 
