@@ -449,7 +449,7 @@
           <tr>
             <th{% if th_style %} style="{{ th_style }}"{% endif %}>Due</th>
             <td{% if td_style %} style="{{ td_style }}"{% endif %}>
-              <span class="value-indicator due-value"{% if due_value_style %} style="{{ due_value_style }}"{% endif %}>{{ ticket.due_badge_label }}</span>
+              <span class="value-indicator due-value"{% if due_value_style %} style="{{ due_value_style }}"{% endif %}>{{ ticket.clipboard_due_badge_label or ticket.due_badge_label }}</span>
               {% if not ticket.due_date and ticket.age_reference_date %}
                 <span class="age-badge"{% if inline_hint_style %} style="{{ inline_hint_style }}"{% endif %}>Aging since {{ ticket.age_reference_date.strftime('%b %d, %Y') }}</span>
               {% endif %}

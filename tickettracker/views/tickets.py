@@ -337,6 +337,13 @@ def _format_sla_countdown(remaining_days: float) -> str:
     return f"SLA : {prefix}{day_count} {label}"
 
 
+def _strip_sla_prefix(label: str) -> str:
+    """Remove the ``"SLA : "`` prefix used in SLA countdown labels."""
+
+    prefix = "SLA : "
+    return label[len(prefix) :] if label.startswith(prefix) else label
+
+
 def _annotate_ticket_sla(
     ticket: Ticket, config: AppConfig, now: datetime | None = None
 ) -> None:
@@ -344,6 +351,7 @@ def _annotate_ticket_sla(
 
     current = now or datetime.utcnow()
     sla_countdown: str | None = None
+    clipboard_sla: str | None = None
     sla_remaining: float | None = None
     sla_breached = False
 
@@ -354,10 +362,12 @@ def _annotate_ticket_sla(
         if sla_remaining is not None:
             sla_breached = sla_remaining < 0
             sla_countdown = _format_sla_countdown(sla_remaining)
+            clipboard_sla = _strip_sla_prefix(sla_countdown)
 
     ticket.is_overdue = sla_breached  # type: ignore[attr-defined]
     ticket.sla_remaining_days = sla_remaining  # type: ignore[attr-defined]
     ticket.sla_countdown = sla_countdown  # type: ignore[attr-defined]
+    ticket.sla_clipboard_countdown = clipboard_sla  # type: ignore[attr-defined]
     ticket.sla_is_breached = sla_breached  # type: ignore[attr-defined]
 
     tint_intensity = OVERDUE_TINT_INTENSITY if sla_breached else BASE_TINT_INTENSITY
@@ -386,9 +396,15 @@ def _annotate_due_state(ticket: Ticket, config: AppConfig) -> None:
         badge_state = "none"
         badge_color = config.colors.gradient_stage_color(0)
 
+    if not ticket.due_date and getattr(ticket, "sla_countdown", None):
+        clipboard_badge_label = _strip_sla_prefix(str(badge_label))
+    else:
+        clipboard_badge_label = badge_label
+
     ticket.due_badge_label = badge_label  # type: ignore[attr-defined]
     ticket.due_badge_state = badge_state  # type: ignore[attr-defined]
     ticket.due_badge_color = badge_color  # type: ignore[attr-defined]
+    ticket.clipboard_due_badge_label = clipboard_badge_label  # type: ignore[attr-defined]
 
 
 def _annotate_indicator_text_colors(

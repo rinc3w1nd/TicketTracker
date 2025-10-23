@@ -11,8 +11,8 @@ Updated: {{ format_timestamp(ticket.updated_at) }}
 {% if 'meta' in sections %}
 Status: {{ ticket.status }}
 Priority: {{ ticket.priority }}
-Due: {{ ticket.due_badge_label }}
-{% if ticket.sla_countdown %}SLA: {{ ticket.sla_countdown }}
+Due: {{ ticket.clipboard_due_badge_label or ticket.due_badge_label }}
+{% if ticket.sla_countdown %}SLA: {{ ticket.sla_clipboard_countdown or ticket.sla_countdown }}
 {% endif %}
 
 {% endif %}
