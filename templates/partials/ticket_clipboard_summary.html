@@ -326,7 +326,7 @@
       </div>
       {% if include_timestamps %}
         <div class="summary-timestamps"{% if timestamps_style %} style="{{ timestamps_style }}"{% endif %}>
-          <span>Created {{ format_timestamp(ticket.created_at) }}</span>
+          <span>Created {{ format_timestamp(ticket.created_at) }}</span></br>
           <span>Updated {{ format_timestamp(ticket.updated_at) }}</span>
         </div>
       {% endif %}
