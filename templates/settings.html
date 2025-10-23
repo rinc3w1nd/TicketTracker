@@ -431,6 +431,16 @@
         method="post"
         action="{{ url_for('settings.toggle_demo_mode', compact=compact_value) }}"
       >
+        <input type="hidden" name="action" value="persist" />
+        <button type="submit" class="button" {% if not demo_status.active %}disabled{% endif %}>
+          Persist demo dataset
+        </button>
+      </form>
+
+      <form
+        method="post"
+        action="{{ url_for('settings.toggle_demo_mode', compact=compact_value) }}"
+      >
         <input type="hidden" name="action" value="refresh" />
         <button type="submit" class="button" {% if not demo_status.active %}disabled{% endif %}>
           Refresh demo data

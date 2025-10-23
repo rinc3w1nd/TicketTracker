@@ -943,6 +943,16 @@ def toggle_demo_mode():
                         )
             else:
                 flash("Demo mode disabled.", "success")
+    elif action == "persist":
+        if not demo_manager.is_active:
+            flash("Enable demo mode before persisting the dataset.", "error")
+        else:
+            try:
+                dataset_path = demo_manager.persist_dataset()
+            except DemoModeError as exc:
+                flash(f"Unable to persist demo dataset: {exc}", "error")
+            else:
+                flash(f"Demo dataset saved to {dataset_path}.", "success")
     elif action == "refresh":
         try:
             demo_manager.refresh()
