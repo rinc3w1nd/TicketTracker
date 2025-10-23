@@ -125,9 +125,10 @@ def _compute_ticket_color(
         if not thresholds:
             return config.colors.gradient_stage_color(0)
         for index, threshold in enumerate(thresholds):
-            if days_remaining > threshold:
-                return config.colors.gradient_stage_color(index)
-        return config.colors.gradient_stage_color(len(thresholds) - 1)
+            if days_remaining <= threshold:
+                stage_index = len(thresholds) - index - 1
+                return config.colors.gradient_stage_color(stage_index)
+        return config.colors.gradient_stage_color(0)
 
     reference_date = ticket.age_reference_date or (
         ticket.created_at.date() if ticket.created_at else now.date()
