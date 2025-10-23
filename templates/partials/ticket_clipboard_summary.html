@@ -502,7 +502,7 @@
     {% if ticket.description %}
       <section class="summary-section" data-clipboard-section="description"{% if section_style %} style="{{ section_style }}"{% endif %}>
         <h2{% if section_heading_style %} style="{{ section_heading_style }}"{% endif %}>Description</h2>
-        <p{% if paragraph_style %} style="{{ paragraph_style }}"{% endif %}>{{ ticket.description|urlize|replace('\n', '<br />')|safe }}</p>
+        <p{% if paragraph_style %} style="{{ paragraph_style }}"{% endif %}>{{ ticket.description|urlize|linebreaks }}</p>
       </section>
     {% endif %}
   {% endcall %}
@@ -511,7 +511,7 @@
     {% if ticket.links %}
       <section class="summary-section" data-clipboard-section="links"{% if section_style %} style="{{ section_style }}"{% endif %}>
         <h2{% if section_heading_style %} style="{{ section_heading_style }}"{% endif %}>Links</h2>
-        <p{% if paragraph_style %} style="{{ paragraph_style }}"{% endif %}>{{ ticket.links|urlize|replace('\n', '<br />')|safe }}</p>
+        <p{% if paragraph_style %} style="{{ paragraph_style }}"{% endif %}>{{ ticket.links|urlize|linebreaks }}</p>
       </section>
     {% endif %}
   {% endcall %}
@@ -520,7 +520,7 @@
     {% if ticket.notes %}
       <section class="summary-section" data-clipboard-section="notes"{% if section_style %} style="{{ section_style }}"{% endif %}>
         <h2{% if section_heading_style %} style="{{ section_heading_style }}"{% endif %}>Notes</h2>
-        <p{% if paragraph_style %} style="{{ paragraph_style }}"{% endif %}>{{ ticket.notes|urlize|replace('\n', '<br />')|safe }}</p>
+        <p{% if paragraph_style %} style="{{ paragraph_style }}"{% endif %}>{{ ticket.notes|urlize|linebreaks }}</p>
       </section>
     {% endif %}
   {% endcall %}
@@ -565,7 +565,7 @@
                 {% else %}
                   {% set update_body_style = timeline_body_style %}
                 {% endif %}
-                <p class="timeline-body"{% if update_body_style %} style="{{ update_body_style }}"{% endif %}>{{ update.body|urlize|replace('\n', '<br />')|safe }}</p>
+                <p class="timeline-body"{% if update_body_style %} style="{{ update_body_style }}"{% endif %}>{{ update.body|urlize|linebreaks }}</p>
               </div>
             </li>
           {% endfor %}

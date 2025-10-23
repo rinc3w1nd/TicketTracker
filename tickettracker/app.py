@@ -5,11 +5,30 @@ from pathlib import Path
 from typing import Optional
 
 from flask import Flask, current_app
+from markupsafe import Markup, escape
 
 from .config import AppConfig, load_config
 from .demo import DemoModeError, get_demo_manager
 from .extensions import db
 from .migrations import run_migrations
+
+
+def linebreaks(value: str | Markup | None) -> Markup:
+    """Convert newlines to ``<br />`` tags while keeping content safe."""
+
+    if value is None:
+        return Markup("")
+
+    br = Markup("<br />")
+
+    if isinstance(value, Markup):
+        normalized_markup = value.replace("\r\n", "\n").replace("\r", "\n")
+        return normalized_markup.replace("\n", br)
+
+    text = str(value)
+    normalized_text = text.replace("\r\n", "\n").replace("\r", "\n")
+    escaped_text = escape(normalized_text)
+    return escaped_text.replace("\n", br)
 
 
 def create_app(config_path: Optional[str | Path] = None) -> Flask:
@@ -62,6 +81,7 @@ def create_app(config_path: Optional[str | Path] = None) -> Flask:
 
     app.register_blueprint(settings_bp)
     app.register_blueprint(tickets_bp)
+    app.add_template_filter(linebreaks, name="linebreaks")
 
     @app.context_processor
     def inject_app_config() -> dict[str, AppConfig]:

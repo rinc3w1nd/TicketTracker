@@ -145,7 +145,7 @@
   <section class="detail-grid">
     <div>
       <h3>Description</h3>
-      <p>{{ ticket.description|urlize|replace('\n', '<br />')|safe }}</p>
+      <p>{{ ticket.description|urlize|linebreaks }}</p>
     </div>
     <aside>
       <dl>
@@ -164,13 +164,13 @@
         {% if ticket.links %}
           <div>
             <dt>Links</dt>
-            <dd>{{ ticket.links|urlize }}</dd>
+            <dd>{{ ticket.links|urlize|linebreaks }}</dd>
           </div>
         {% endif %}
         {% if ticket.notes %}
           <div>
             <dt>Notes</dt>
-            <dd>{{ ticket.notes|urlize|replace('\n', '<br />')|safe }}</dd>
+            <dd>{{ ticket.notes|urlize|linebreaks }}</dd>
           </div>
         {% endif %}
       </dl>
@@ -252,7 +252,7 @@
                 <span class="status-change">{{ update.status_from or '—' }} → {{ update.status_to or '—' }}</span>
               {% endif %}
             </div>
-            <p>{{ update.body|urlize|replace('\n', '<br />')|safe }}</p>
+            <p>{{ update.body|urlize|linebreaks }}</p>
             {% if update.attachments %}
               <ul class="update-attachments">
                 {% for attachment in update.attachments %}
