@@ -61,6 +61,91 @@
         <p class="help">List statuses in the order they should appear in dropdowns.</p>
       </div>
 
+      <fieldset class="field-group sla-settings">
+        <legend>Service level thresholds</legend>
+        <p class="help">
+          Configure when tickets change SLA stage or become overdue. Leave a field blank to
+          fall back to defaults.
+        </p>
+
+        <div class="field-group">
+          <label for="default_due_days">Default backlog due days</label>
+          <input
+            type="number"
+            id="default_due_days"
+            name="default_due_days"
+            min="0"
+            value="{{ form.default_due_days|default('') }}"
+          />
+          <p class="help">
+            Used when a priority does not specify custom backlog stage thresholds.
+          </p>
+        </div>
+
+        <div class="sla-stage-group">
+          <h3>Due date stages</h3>
+          <p class="help">
+            Days remaining before a ticket advances through warning stages (highest stage
+            first).
+          </p>
+          <div class="sla-stage-inputs">
+            {% for label in sla_stage_labels %}
+              {% set index = loop.index0 %}
+              <label class="sla-stage-input" for="due_stage_days_{{ index }}">
+                <span class="stage-label">{{ label }}</span>
+                <input
+                  type="number"
+                  id="due_stage_days_{{ index }}"
+                  name="due_stage_days"
+                  min="0"
+                  value="{{ form.due_stage_days[index]|default('') }}"
+                />
+              </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="sla-stage-group">
+          <h3>Backlog stages by priority</h3>
+          <p class="help">
+            Provide the maximum age (in days) before backlog tickets escalate for each
+            priority.
+          </p>
+          <table class="sla-priority-table">
+            <thead>
+              <tr>
+                <th scope="col">Priority</th>
+                {% for label in sla_stage_labels %}
+                  <th scope="col">{{ label }}</th>
+                {% endfor %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for priority, values in form.priority_stage_days.items() %}
+                {% set priority_slug = priority|lower|replace(' ', '-')|replace('/', '-') %}
+                <tr>
+                  <th scope="row">{{ priority }}</th>
+                  {% for label in sla_stage_labels %}
+                    {% set stage_index = loop.index0 %}
+                    <td>
+                      <input
+                        type="number"
+                        name="priority_stage_days[{{ priority }}]"
+                        id="priority_stage_days_{{ priority_slug }}_{{ stage_index }}"
+                        min="0"
+                        value="{{ values[stage_index]|default('') }}"
+                        aria-label="{{ priority }} {{ label }}"
+                      />
+                    </td>
+                  {% endfor %}
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          <p class="help">Leave blanks to inherit the default backlog limit above.</p>
+        </div>
+      </fieldset>
+
       <fieldset class="field-group clipboard-sections">
         <legend>Clipboard sections</legend>
         <table class="clipboard-sections-table">
