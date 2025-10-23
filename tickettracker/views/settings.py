@@ -36,6 +36,40 @@ from ..summary import CLIPBOARD_SUMMARY_SECTION_DESCRIPTIONS
 settings_bp = Blueprint("settings", __name__)
 
 
+_DEFAULT_STAGE_LABELS = [
+    "Comfort Zone",
+    "Attention Zone",
+    "Action Zone",
+    "Fire Zone",
+]
+
+
+def _stage_labels(stage_count: int) -> List[str]:
+    """Return human-friendly labels for SLA stages."""
+
+    if stage_count <= 0:
+        return []
+
+    labels: List[str] = []
+    for index in range(stage_count):
+        if index < len(_DEFAULT_STAGE_LABELS):
+            labels.append(_DEFAULT_STAGE_LABELS[index])
+        else:
+            labels.append(f"Stage {index + 1}")
+    return labels
+
+
+def _stage_index_from_key(key: str) -> int | None:
+    """Return the numeric index for gradient stage keys (e.g. ``stage2``)."""
+
+    prefix = "stage"
+    if key.startswith(prefix):
+        suffix = key[len(prefix) :]
+        if suffix.isdigit():
+            return int(suffix)
+    return None
+
+
 def _app_config() -> AppConfig:
     return current_app.config["APP_CONFIG"]
 
@@ -267,16 +301,33 @@ def _color_category_entries(
         key_str = str(key)
         if key_str not in gradient_order:
             gradient_order.append(key_str)
+    stage_indexes = [
+        index
+        for index in (
+            _stage_index_from_key(str(key))
+            for key in gradient_order
+        )
+        if index is not None
+    ]
+    if stage_indexes:
+        stage_count = max(stage_indexes) + 1
+    else:
+        stage_count = len(GRADIENT_STAGE_ORDER)
+    stage_labels = _stage_labels(stage_count)
     for key in gradient_order:
         entry = gradient_palette.get(str(key))
         if not entry:
             continue
         if key == GRADIENT_OVERDUE_KEY:
             label = "Overdue"
-        elif key in GRADIENT_STAGE_ORDER:
-            label = f"Stage {GRADIENT_STAGE_ORDER.index(key) + 1}"
         else:
-            label = str(key).replace("_", " ").title()
+            stage_index = _stage_index_from_key(str(key))
+            if stage_index is None:
+                label = str(key).replace("_", " ").title()
+            else:
+                if stage_index >= len(stage_labels):
+                    stage_labels = _stage_labels(stage_index + 1)
+                label = stage_labels[stage_index]
         gradient_entries.append(
             {
                 "key": str(key),
@@ -832,6 +883,13 @@ def view_settings():
     demo_status = demo_manager.status()
     color_sections = _color_sections(config, form_data.get("color_palette", {}))
 
+    stage_count_value = form_data.get("sla_stage_count", 0)
+    try:
+        stage_count = int(stage_count_value)
+    except (TypeError, ValueError):
+        stage_count = 0
+    stage_labels = _stage_labels(stage_count)
+
     return render_template(
         "settings.html",
         config=config,
@@ -843,9 +901,7 @@ def view_settings():
         ),
         clipboard_sections=section_options,
         color_sections=color_sections,
-        sla_stage_labels=[
-            f"Stage {index + 1}" for index in range(form_data.get("sla_stage_count", 0))
-        ],
+        sla_stage_labels=stage_labels,
     )
 
 
