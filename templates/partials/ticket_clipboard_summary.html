@@ -79,7 +79,6 @@
 {% set status_value_style = value_indicator_base_style + " color: " + status_text_color + ";" if value_indicator_base_style else "" %}
 {% set priority_value_style = value_indicator_base_style + " color: " + priority_text_color + ";" if value_indicator_base_style else "" %}
 {% set due_value_style = value_indicator_base_style + " color: " + due_text_color + ";" if value_indicator_base_style else "" %}
-{% set sla_badge_style = badge_base_style + " background: rgba(56, 189, 248, 0.35); color: #f8fafc;" if badge_base_style else "" %}
 {% set status_note_style = "margin-left: 8px; font-size: 12px; color: " ~ muted_color ~ "; letter-spacing: 0.03em;" if use_inline_styles else "" %}
 {% set inline_hint_style = "margin-left: 8px; font-size: 12px; color: " ~ muted_color ~ "; letter-spacing: 0.03em;" if use_inline_styles else "" %}
 {% set tag_list_style = "list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px;" if use_inline_styles else "" %}
@@ -274,11 +273,6 @@
     );
   }
 
-  .ticket-clipboard-summary .sla-badge {
-    background: rgba(56, 189, 248, 0.35);
-    color: #f8fafc;
-  }
-
   .ticket-clipboard-summary .status-note,
   .ticket-clipboard-summary .age-badge {
     font-size: 0.75rem;
@@ -461,14 +455,6 @@
               {% endif %}
             </td>
           </tr>
-          {% if ticket.sla_countdown %}
-            <tr>
-              <th{% if th_style %} style="{{ th_style }}"{% endif %}>SLA</th>
-              <td{% if td_style %} style="{{ td_style }}"{% endif %}>
-                <span class="badge sla-badge"{% if sla_badge_style %} style="{{ sla_badge_style }}"{% endif %}>{{ ticket.sla_countdown }}</span>
-              </td>
-            </tr>
-          {% endif %}
         </tbody>
       </table>
     </section>
