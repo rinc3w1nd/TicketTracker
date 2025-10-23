@@ -3,10 +3,11 @@
 }
 
 .ticket-card .ticket-tooltip {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  width: min(22rem, calc(100% - 2rem));
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: min(22rem, calc(100vw - 2rem));
+  max-width: min(22rem, calc(100vw - 2rem));
   background: color-mix(in srgb, rgba(15, 23, 42, 0.94) 88%, var(--ticket-accent, rgba(56, 189, 248, 0.3)) 12%);
   border: 1px solid color-mix(in srgb, var(--ticket-accent, rgba(56, 189, 248, 0.45)) 55%, transparent 45%);
   border-radius: 1.25rem;
@@ -144,10 +145,8 @@
 
 @media (max-width: 720px) {
   .ticket-card .ticket-tooltip {
-    position: fixed;
-    inset: auto 1.5rem 2rem 1.5rem;
-    width: auto;
-    max-width: min(28rem, calc(100vw - 3rem));
+    width: min(24rem, calc(100vw - 2rem));
+    max-width: min(24rem, calc(100vw - 2rem));
   }
 }
 
