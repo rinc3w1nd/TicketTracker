@@ -111,7 +111,7 @@
   {% if tickets %}
     {% for ticket in tickets %}
       <article
-        class="ticket-card{% if ticket.is_overdue %} is-overdue{% endif %}"
+        class="ticket-card ticket-surface{% if ticket.is_overdue %} is-overdue{% endif %}"
         data-clipboard-container
         data-overdue="{{ 'true' if ticket.is_overdue else 'false' }}"
         style="--ticket-accent: {{ ticket.display_color }}; --ticket-tint: {{ ticket.tint_color }};"

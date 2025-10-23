@@ -4,7 +4,7 @@
 {% set is_compact = compact_mode|default(true) %}
 {% set compact_value = '1' if is_compact else '0' %}
 <article
-  class="ticket-detail{% if ticket.is_overdue %} is-overdue{% endif %}"
+  class="ticket-detail ticket-surface{% if ticket.is_overdue %} is-overdue{% endif %}"
   data-clipboard-container
   data-overdue="{{ 'true' if ticket.is_overdue else 'false' }}"
   style="--ticket-accent: {{ ticket.display_color }}; --ticket-tint: {{ ticket.tint_color }}; --ticket-title-color: {{ ticket_title_color|default('#f8fafc') }};"
