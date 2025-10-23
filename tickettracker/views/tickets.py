@@ -35,21 +35,19 @@ def inject_ticket_helpers() -> Dict[str, object]:
     """Expose helper utilities used by ticket templates."""
 
     def tag_filter_url(tag_name: str, compact_value: str) -> str:
-        """Return a ticket list URL that adds the provided tag filter.
+        """Return a ticket list URL that replaces the tag filter.
 
-        The generated link preserves any existing query arguments so repeated
-        clicks continue stacking filters (e.g. status, search terms, other
-        tags). When no tag filter exists yet the helper ensures ``tag_mode``
-        defaults to ``"any"`` so additional tags broaden the search rather
-        than narrowing it unexpectedly.
+        The generated link preserves any existing query arguments (e.g. status,
+        search terms) so the broader filter state remains intact. When no tag
+        filter exists yet the helper ensures ``tag_mode`` defaults to ``"any"``
+        so additional tags broaden the search rather than narrowing it
+        unexpectedly.
         """
 
         query_args: Dict[str, List[str]] = {
             key: list(values) for key, values in request.args.lists()
         }
-        tags = query_args.setdefault("tag", [])
-        if tag_name not in tags:
-            tags.append(tag_name)
+        query_args["tag"] = [tag_name]
 
         tag_mode = request.args.get("tag_mode") or "any"
         query_args["tag_mode"] = [tag_mode]
