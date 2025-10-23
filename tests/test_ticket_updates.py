@@ -1,5 +1,6 @@
 import io
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -96,3 +97,94 @@ def test_auto_attachment_posts_create_update(app_with_ticket):
         for attachment in attachments:
             stored_path = uploads_path / attachment.stored_filename
             assert stored_path.exists(), f"Expected {stored_path} to exist"
+
+
+def test_attachment_deduplication_reuses_existing_file(app_with_ticket):
+    app, uploads_path, ticket_id = app_with_ticket
+    client = app.test_client()
+
+    initial = {
+        "message": "",
+        "submitted_by": "Tester",
+        "status": "Open",
+        "attachments": [(io.BytesIO(b"duplicate payload"), "first.txt")],
+    }
+
+    follow_up = {
+        "message": "",
+        "submitted_by": "Tester",
+        "status": "Open",
+        "attachments": [(io.BytesIO(b"duplicate payload"), "second.txt")],
+    }
+
+    response = client.post(
+        f"/tickets/{ticket_id}/updates",
+        data=initial,
+        content_type="multipart/form-data",
+    )
+    assert response.status_code == 302
+
+    response = client.post(
+        f"/tickets/{ticket_id}/updates",
+        data=follow_up,
+        content_type="multipart/form-data",
+    )
+    assert response.status_code == 302
+
+    with app.app_context():
+        attachments = (
+            Attachment.query.filter_by(ticket_id=ticket_id)
+            .order_by(Attachment.id.asc())
+            .all()
+        )
+        assert len(attachments) == 2
+        first, second = attachments
+
+        assert first.checksum == second.checksum
+        assert first.stored_filename == second.stored_filename
+        assert first.file_uuid == second.file_uuid
+        assert first.stored_filename.startswith("shared/")
+
+        shared_path = uploads_path / first.stored_filename
+        assert shared_path.exists()
+        shared_directory = uploads_path / "shared"
+        shared_files = list(shared_directory.glob("*")) if shared_directory.exists() else []
+        assert len(shared_files) == 1
+
+
+def test_new_attachment_generates_uuid_filename(app_with_ticket):
+    app, uploads_path, ticket_id = app_with_ticket
+    client = app.test_client()
+
+    data = {
+        "message": "",
+        "submitted_by": "",
+        "status": "Open",
+        "attachments": [(io.BytesIO(b"unique content"), "note.txt")],
+    }
+
+    response = client.post(
+        f"/tickets/{ticket_id}/updates",
+        data=data,
+        content_type="multipart/form-data",
+    )
+    assert response.status_code == 302
+
+    with app.app_context():
+        attachment = Attachment.query.filter_by(ticket_id=ticket_id).one()
+        assert attachment.checksum is not None
+        assert len(attachment.checksum) == 64
+        assert attachment.file_uuid
+
+        stored_filename = attachment.stored_filename
+        assert stored_filename.startswith("shared/")
+        uuid_part = stored_filename.split("/", 1)[1]
+        pattern = re.compile(
+            r"^([0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})-\d{20}\.txt$"
+        )
+        match = pattern.match(uuid_part)
+        assert match, f"Unexpected stored filename format: {stored_filename}"
+        assert match.group(1) == attachment.file_uuid
+
+        stored_path = uploads_path / stored_filename
+        assert stored_path.exists()
