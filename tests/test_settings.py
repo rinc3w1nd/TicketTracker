@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
+from urllib.parse import parse_qs, urlparse
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -25,6 +26,20 @@ def _default_config() -> dict:
     return json.loads(json.dumps(DEFAULT_CONFIG))
 
 
+def _settings_form_data(config_data: dict, **overrides: object) -> dict:
+    payload = {
+        "default_submitted_by": config_data["default_submitted_by"],
+        "priorities": "\n".join(config_data["priorities"]),
+        "hold_reasons": "\n".join(config_data["hold_reasons"]),
+        "workflow": "\n".join(config_data["workflow"]),
+        "html_sections": "\n".join(config_data["clipboard_summary"]["html_sections"]),
+        "text_sections": "\n".join(config_data["clipboard_summary"]["text_sections"]),
+        "updates_limit": str(config_data["clipboard_summary"]["updates_limit"]),
+    }
+    payload.update(overrides)
+    return payload
+
+
 def test_load_config_records_source_path(tmp_path):
     config_data = _default_config()
     config_data["database"]["uri"] = "sqlite:///:memory:"
@@ -35,6 +50,7 @@ def test_load_config_records_source_path(tmp_path):
     assert config.source_path == config_path.resolve()
     payload = config.to_json_dict()
     assert payload["demo_mode"] is False
+    assert payload["behavior"]["auto_return_to_list"] is False
     assert payload["database"]["uri"].endswith("/:memory:")
     assert payload["clipboard_summary"]["html_sections"][1] == "timestamps"
     assert payload["clipboard_summary"]["text_sections"][1] == "timestamps"
@@ -53,6 +69,19 @@ def test_settings_update_persists_between_app_starts(tmp_path):
     app = create_app(config_path)
 
     client = app.test_client()
+    form_payload = _settings_form_data(
+        config_data,
+        default_submitted_by="Operations Team",
+        priorities="Low\nMedium\nHigh\nUrgent",
+        hold_reasons="Awaiting info\nReview pending",
+        workflow="New\nActive\nDone",
+        html_sections="header\ntimestamps\nsummary",
+        text_sections="header\ntimestamps\nsummary\nnotes",
+        updates_limit="3",
+        demo_mode="on",
+        auto_return_to_list="on",
+    )
+
     response = client.post(
         "/settings",
         data=MultiDict(
@@ -97,11 +126,13 @@ def test_settings_update_persists_between_app_starts(tmp_path):
     assert persisted["clipboard_summary"]["debug_status"] is False
     assert persisted["clipboard_summary"].get("inline_styles") is False
     assert persisted["demo_mode"] is True
+    assert persisted["behavior"]["auto_return_to_list"] is True
 
     with app.app_context():
         updated_config = current_app.config["APP_CONFIG"]
         assert updated_config.demo_mode is True
         assert updated_config.priorities == ["Low", "Medium", "High", "Urgent"]
+        assert updated_config.auto_return_to_list is True
         assert current_app.config["DEMO_MODE"] is True
 
     new_app = create_app(config_path)
@@ -110,6 +141,7 @@ def test_settings_update_persists_between_app_starts(tmp_path):
         assert reloaded_config.demo_mode is True
         assert reloaded_config.priorities == ["Low", "Medium", "High", "Urgent"]
         assert reloaded_config.hold_reasons == ["Awaiting info", "Review pending"]
+        assert reloaded_config.auto_return_to_list is True
         assert reloaded_config.clipboard_summary.html_sections == [
             "header",
             "timestamps",
@@ -123,6 +155,50 @@ def test_settings_update_persists_between_app_starts(tmp_path):
         ]
         assert reloaded_config.clipboard_summary.updates_limit == 3
         assert reloaded_config.clipboard_summary.debug_status is False
+
+
+def test_settings_redirects_to_settings_when_auto_return_disabled(tmp_path):
+    config_data = _default_config()
+    config_path = _write_config(tmp_path / "config.json", config_data)
+
+    app = create_app(config_path)
+    client = app.test_client()
+
+    response = client.post(
+        "/settings?compact=0",
+        data=_settings_form_data(config_data),
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 302
+    location = urlparse(response.headers["Location"])
+    assert location.path == "/settings"
+    assert parse_qs(location.query).get("compact") == ["0"]
+
+    with app.app_context():
+        assert current_app.config["APP_CONFIG"].auto_return_to_list is False
+
+
+def test_settings_redirects_to_ticket_list_when_auto_return_enabled(tmp_path):
+    config_data = _default_config()
+    config_path = _write_config(tmp_path / "config.json", config_data)
+
+    app = create_app(config_path)
+    client = app.test_client()
+
+    response = client.post(
+        "/settings?compact=0",
+        data=_settings_form_data(config_data, auto_return_to_list="on"),
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 302
+    location = urlparse(response.headers["Location"])
+    assert location.path == "/"
+    assert parse_qs(location.query).get("compact") == ["0"]
+
+    with app.app_context():
+        assert current_app.config["APP_CONFIG"].auto_return_to_list is True
 
 
 def test_clipboard_debug_toggle_round_trip(tmp_path):

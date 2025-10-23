@@ -3,6 +3,7 @@ import json
 import re
 import sys
 from pathlib import Path
+from urllib.parse import parse_qs, urlparse
 
 import pytest
 
@@ -28,32 +29,38 @@ def _default_config() -> dict:
 
 
 @pytest.fixture()
-def app_with_ticket(tmp_path):
-    config_data = _default_config()
-    database_path = tmp_path / "app.db"
-    uploads_path = tmp_path / "uploads"
-    config_data["database"]["uri"] = f"sqlite:///{database_path}"
-    config_data["uploads"]["directory"] = str(uploads_path)
-    config_path = _write_config(tmp_path / "config.json", config_data)
-
-    app = create_app(config_path)
-
-    with app.app_context():
-        ticket = Ticket(
-            title="Ticket for attachment updates",
-            description="Ensure attachment-only posts create timeline entries.",
-            priority="Medium",
-            status="Open",
+def make_app_with_ticket(tmp_path):
+    def _create(*, auto_return_to_list: bool = False):
+        config_data = _default_config()
+        database_path = tmp_path / "app.db"
+        uploads_path = tmp_path / "uploads"
+        config_data["database"]["uri"] = f"sqlite:///{database_path}"
+        config_data["uploads"]["directory"] = str(uploads_path)
+        config_data.setdefault("behavior", {})["auto_return_to_list"] = (
+            auto_return_to_list
         )
-        db.session.add(ticket)
-        db.session.commit()
-        ticket_id = ticket.id
+        config_path = _write_config(tmp_path / "config.json", config_data)
 
-    return app, uploads_path, ticket_id
+        app = create_app(config_path)
+
+        with app.app_context():
+            ticket = Ticket(
+                title="Ticket for attachment updates",
+                description="Ensure attachment-only posts create timeline entries.",
+                priority="Medium",
+                status="Open",
+            )
+            db.session.add(ticket)
+            db.session.commit()
+            ticket_id = ticket.id
+
+        return app, uploads_path, ticket_id
+
+    return _create
 
 
-def test_auto_attachment_posts_create_update(app_with_ticket):
-    app, uploads_path, ticket_id = app_with_ticket
+def test_auto_attachment_posts_create_update(make_app_with_ticket):
+    app, uploads_path, ticket_id = make_app_with_ticket()
     client = app.test_client()
 
     data = {
@@ -99,8 +106,8 @@ def test_auto_attachment_posts_create_update(app_with_ticket):
             assert stored_path.exists(), f"Expected {stored_path} to exist"
 
 
-def test_attachment_deduplication_reuses_existing_file(app_with_ticket):
-    app, uploads_path, ticket_id = app_with_ticket
+def test_attachment_deduplication_reuses_existing_file(make_app_with_ticket):
+    app, uploads_path, ticket_id = make_app_with_ticket()
     client = app.test_client()
 
     initial = {
@@ -152,8 +159,8 @@ def test_attachment_deduplication_reuses_existing_file(app_with_ticket):
         assert len(shared_files) == 1
 
 
-def test_new_attachment_generates_uuid_filename(app_with_ticket):
-    app, uploads_path, ticket_id = app_with_ticket
+def test_new_attachment_generates_uuid_filename(make_app_with_ticket):
+    app, uploads_path, ticket_id = make_app_with_ticket()
     client = app.test_client()
 
     data = {
@@ -188,3 +195,67 @@ def test_new_attachment_generates_uuid_filename(app_with_ticket):
 
         stored_path = uploads_path / stored_filename
         assert stored_path.exists()
+
+
+def test_add_update_redirects_to_detail_by_default(make_app_with_ticket):
+    app, _, ticket_id = make_app_with_ticket()
+    client = app.test_client()
+
+    response = client.post(
+        f"/tickets/{ticket_id}/updates",
+        data={"message": "Progress", "submitted_by": "", "status": "Open"},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 302
+    location = urlparse(response.headers["Location"])
+    assert location.path == f"/tickets/{ticket_id}"
+    assert parse_qs(location.query).get("compact") == ["1"]
+
+
+def test_add_update_redirects_to_list_when_enabled(make_app_with_ticket):
+    app, _, ticket_id = make_app_with_ticket(auto_return_to_list=True)
+    client = app.test_client()
+
+    response = client.post(
+        f"/tickets/{ticket_id}/updates",
+        data={"message": "Progress", "submitted_by": "", "status": "Open"},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 302
+    location = urlparse(response.headers["Location"])
+    assert location.path == "/"
+    assert parse_qs(location.query).get("compact") == ["1"]
+
+
+def test_edit_ticket_redirects_to_detail_by_default(make_app_with_ticket):
+    app, _, ticket_id = make_app_with_ticket()
+    client = app.test_client()
+
+    response = client.post(
+        f"/tickets/{ticket_id}/edit",
+        data={"title": "Updated title"},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 302
+    location = urlparse(response.headers["Location"])
+    assert location.path == f"/tickets/{ticket_id}"
+    assert parse_qs(location.query).get("compact") == ["1"]
+
+
+def test_edit_ticket_redirects_to_list_when_enabled(make_app_with_ticket):
+    app, _, ticket_id = make_app_with_ticket(auto_return_to_list=True)
+    client = app.test_client()
+
+    response = client.post(
+        f"/tickets/{ticket_id}/edit",
+        data={"title": "Updated title"},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 302
+    location = urlparse(response.headers["Location"])
+    assert location.path == "/"
+    assert parse_qs(location.query).get("compact") == ["1"]

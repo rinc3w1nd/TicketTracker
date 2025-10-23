@@ -77,5 +77,8 @@
     "updates_limit": 1,
     "debug_status": false,
     "inline_styles": true
+  },
+  "behavior": {
+    "auto_return_to_list": false
   }
 }
