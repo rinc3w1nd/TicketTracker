@@ -1,5 +1,7 @@
 import json
+import re
 import sys
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -132,3 +134,53 @@ def test_settings_toggle_demo_mode_route(app_with_storage):
 
     persisted = json.loads(config_path.read_text())
     assert persisted["demo_mode"] is False
+
+
+def test_priority_sorting_uses_configured_order(app_with_storage):
+    app, _, _ = app_with_storage
+
+    client = app.test_client()
+
+    with app.app_context():
+        config = current_app.config["APP_CONFIG"]
+        expected_order = list(config.priorities)
+        now = datetime.utcnow()
+
+        for index, priority in enumerate(reversed(expected_order)):
+            offset = timedelta(minutes=index)
+            ticket = Ticket(
+                title=f"{priority} priority ticket",
+                description="Ticket created for priority sort regression test.",
+                priority=priority,
+                status="Open",
+                created_at=now - offset,
+                updated_at=now - offset,
+            )
+            db.session.add(ticket)
+
+        unmatched_priority = "Unplanned"
+        db.session.add(
+            Ticket(
+                title="Unplanned priority ticket",
+                description="Ticket with an unmatched priority should be last.",
+                priority=unmatched_priority,
+                status="Open",
+                created_at=now + timedelta(minutes=1),
+                updated_at=now + timedelta(minutes=1),
+            )
+        )
+
+        db.session.commit()
+
+    response = client.get("/?sort=priority")
+    assert response.status_code == 200
+
+    html = response.data.decode("utf-8")
+    priority_badges = re.findall(
+        r"class=\"priority-badge\"[^>]*data-priority=\"([^\"]+)\"",
+        html,
+    )
+
+    assert len(priority_badges) == len(expected_order) + 1
+    assert priority_badges[: len(expected_order)] == expected_order
+    assert priority_badges[-1] == unmatched_priority
