@@ -10,6 +10,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from flask import current_app
+from werkzeug.datastructures import MultiDict
 
 from tickettracker.app import create_app
 from tickettracker.config import DEFAULT_CONFIG, load_config
@@ -54,16 +55,23 @@ def test_settings_update_persists_between_app_starts(tmp_path):
     client = app.test_client()
     response = client.post(
         "/settings",
-        data={
-            "default_submitted_by": "Operations Team",
-            "priorities": "Low\nMedium\nHigh\nUrgent",
-            "hold_reasons": "Awaiting info\nReview pending",
-            "workflow": "New\nActive\nDone",
-            "html_sections": "header\ntimestamps\nsummary",
-            "text_sections": "header\ntimestamps\nsummary\nnotes",
-            "updates_limit": "3",
-            "demo_mode": "on",
-        },
+        data=MultiDict(
+            [
+                ("default_submitted_by", "Operations Team"),
+                ("priorities", "Low\nMedium\nHigh\nUrgent"),
+                ("hold_reasons", "Awaiting info\nReview pending"),
+                ("workflow", "New\nActive\nDone"),
+                ("html_sections", "header"),
+                ("html_sections", "timestamps"),
+                ("html_sections", "meta"),
+                ("text_sections", "header"),
+                ("text_sections", "timestamps"),
+                ("text_sections", "meta"),
+                ("text_sections", "updates"),
+                ("updates_limit", "3"),
+                ("demo_mode", "on"),
+            ]
+        ),
         follow_redirects=True,
     )
 
@@ -77,13 +85,13 @@ def test_settings_update_persists_between_app_starts(tmp_path):
     assert persisted["clipboard_summary"]["html_sections"] == [
         "header",
         "timestamps",
-        "summary",
+        "meta",
     ]
     assert persisted["clipboard_summary"]["text_sections"] == [
         "header",
         "timestamps",
-        "summary",
-        "notes",
+        "meta",
+        "updates",
     ]
     assert persisted["clipboard_summary"]["updates_limit"] == 3
     assert persisted["clipboard_summary"]["debug_status"] is False
@@ -105,13 +113,13 @@ def test_settings_update_persists_between_app_starts(tmp_path):
         assert reloaded_config.clipboard_summary.html_sections == [
             "header",
             "timestamps",
-            "summary",
+            "meta",
         ]
         assert reloaded_config.clipboard_summary.text_sections == [
             "header",
             "timestamps",
-            "summary",
-            "notes",
+            "meta",
+            "updates",
         ]
         assert reloaded_config.clipboard_summary.updates_limit == 3
         assert reloaded_config.clipboard_summary.debug_status is False
@@ -123,18 +131,27 @@ def test_clipboard_debug_toggle_round_trip(tmp_path):
 
     app = create_app(config_path)
     client = app.test_client()
+    data = MultiDict(
+        [
+            ("default_submitted_by", config_data["default_submitted_by"]),
+            ("priorities", "\n".join(config_data["priorities"])),
+            ("hold_reasons", "\n".join(config_data["hold_reasons"])),
+            ("workflow", "\n".join(config_data["workflow"])),
+            (
+                "updates_limit",
+                str(config_data["clipboard_summary"]["updates_limit"]),
+            ),
+            ("clipboard_debug_status", "on"),
+        ]
+    )
+    for section in config_data["clipboard_summary"]["html_sections"]:
+        data.add("html_sections", section)
+    for section in config_data["clipboard_summary"]["text_sections"]:
+        data.add("text_sections", section)
+
     response = client.post(
         "/settings",
-        data={
-            "default_submitted_by": config_data["default_submitted_by"],
-            "priorities": "\n".join(config_data["priorities"]),
-            "hold_reasons": "\n".join(config_data["hold_reasons"]),
-            "workflow": "\n".join(config_data["workflow"]),
-            "html_sections": "\n".join(config_data["clipboard_summary"]["html_sections"]),
-            "text_sections": "\n".join(config_data["clipboard_summary"]["text_sections"]),
-            "updates_limit": str(config_data["clipboard_summary"]["updates_limit"]),
-            "clipboard_debug_status": "on",
-        },
+        data=data,
         follow_redirects=True,
     )
 
