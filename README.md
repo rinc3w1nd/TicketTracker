@@ -142,12 +142,12 @@ coffee.)
 
 |   | Coin | Address |
 |---|------|---------|
-| <img src="static/img/Bitcoin.svg" height="24"> | *Bitcoin* | `bc1qnj60jqgp5uwu8uek843jxqlg7s5a05vlvatsw7` |
-| <img src="static/img/Ethereum.svg" height="24"> | *Ethereum* | `0x4c12c4439D10962c5d2d9B04CFA3246b2A399d58` |
-| <img src="static/img/Litecoin.svg" height="24"> | *Litecoin* | `ltc1q4metd98pvz6v0y4akr33rcq3pyana7sr97gjuu` |
-| <img src="static/img/Dogecoin.svg" height="24"> | *Dogecoin* | `D6iYuzD6moPusdciMBQRfyryxNJsmiVtRH` |
-| <img src="static/img/Shiba-Inu.svg" height="24"> | *Shiba Inu* | `0x4c12c4439D10962c5d2d9B04CFA3246b2A399d58` |
-| <img src="static/img/xrp.svg" height="24"> | *XRP* | `rhB3NffCBbrAVkdAVFsVQWHa3NBJLKXaf1` |
-| <img src="static/img/Monero.svg" height="24"> | *Monero* | `4BAMFNn71DhZTd2G6kmESPG7n3sG9pW4bWsKAZaKjZ67EMnTuJqJW1DH1cr1scZxP57BQshpEr2fz5KKSP4K3ScvRkH7N8S` |
+| <img src="static/img/Bitcoin.svg" height="24"> | **Bitcoin** | `bc1qnj60jqgp5uwu8uek843jxqlg7s5a05vlvatsw7` |
+| <img src="static/img/Ethereum.svg" height="24"> | **Ethereum** | `0x4c12c4439D10962c5d2d9B04CFA3246b2A399d58` |
+| <img src="static/img/Litecoin.svg" height="24"> | **Litecoin** | `ltc1q4metd98pvz6v0y4akr33rcq3pyana7sr97gjuu` |
+| <img src="static/img/Dogecoin.svg" height="24"> | **Dogecoin** | `D6iYuzD6moPusdciMBQRfyryxNJsmiVtRH` |
+| <img src="static/img/Shiba-Inu.svg" height="24"> | **Shiba Inu** | `0x4c12c4439D10962c5d2d9B04CFA3246b2A399d58` |
+| <img src="static/img/xrp.svg" height="24"> | **XRP** | `rhB3NffCBbrAVkdAVFsVQWHa3NBJLKXaf1` |
+| <img src="static/img/Monero.svg" height="24"> | **Monero** | `4BAMFNn71DhZTd2G6kmESPG7n3sG9pW4bWsKAZaKjZ67EMnTuJqJW1DH1cr1scZxP57BQshpEr2fz5KKSP4K3ScvRkH7N8S` |
 
 > Tips are always appreciated but never expected—they don’t grant special access, support guarantees, or priority handling.

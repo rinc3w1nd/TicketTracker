@@ -18,12 +18,21 @@
   <body class="{% if is_compact %}compact{% endif %}">
     <header class="app-header">
       <div class="brand">
-        <span class="logo">
+        <button
+          type="button"
+          class="logo brand-logo-button"
+          id="brand-logo-button"
+          aria-label="Open the support development message"
+          title="Support development"
+          aria-haspopup="dialog"
+          aria-controls="donation-modal"
+          aria-expanded="false"
+        >
           <img
             src="{{ url_for('static', filename='img/ticket_stopwatch.svg') }}"
             alt="TicketTracker logo featuring a ticket with a stopwatch"
           />
-        </span>
+        </button>
         <div class="brand-text">
           <h1>TicketTracker</h1>
           <p class="subtitle">Local-first ticketing desk</p>
@@ -109,6 +118,28 @@
     <footer class="app-footer">
       <p>Uploads stored in <code>{{ app_config.uploads_path }}</code>. Customize colors and SLAs via the JSON config.</p>
     </footer>
-    {% block scripts %}{% endblock %}
+
+    <div class="donation-modal" id="donation-modal" hidden>
+      <div class="donation-modal__backdrop" data-close="donation-modal"></div>
+      <div
+        class="donation-modal__dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="donation-dialog-heading"
+        tabindex="-1"
+      >
+        <button type="button" class="donation-modal__close" aria-label="Close support message">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <div class="donation-modal__body">
+          {% set donation_heading_id = 'donation-dialog-heading' %}
+          {% include 'partials/support_donation_message.html' %}
+        </div>
+      </div>
+    </div>
+
+    {% block scripts %}
+      <script defer src="{{ url_for('static', filename='js/donation.js') }}"></script>
+    {% endblock %}
   </body>
 </html>
