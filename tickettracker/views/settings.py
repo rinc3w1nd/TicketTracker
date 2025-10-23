@@ -103,6 +103,7 @@ def _form_defaults(config: AppConfig) -> Dict[str, object]:
         "text_sections": "\n".join(text_sections),
         "updates_limit": str(config.clipboard_summary.updates_limit),
         "clipboard_debug_status": config.clipboard_summary.debug_status,
+        "auto_return_to_list": config.auto_return_to_list,
         "demo_mode": config.demo_mode,
     }
 
@@ -124,6 +125,7 @@ def view_settings():
         text_sections_input = request.form.get("text_sections", "")
         updates_limit_input = request.form.get("updates_limit", "").strip()
         debug_status_enabled = request.form.get("clipboard_debug_status") is not None
+        auto_return_enabled = request.form.get("auto_return_to_list") is not None
         demo_mode_enabled = request.form.get("demo_mode") is not None
 
         form_data = {
@@ -135,6 +137,7 @@ def view_settings():
             "text_sections": text_sections_input,
             "updates_limit": updates_limit_input,
             "clipboard_debug_status": debug_status_enabled,
+            "auto_return_to_list": auto_return_enabled,
             "demo_mode": demo_mode_enabled,
         }
 
@@ -196,6 +199,7 @@ def view_settings():
                 hold_reasons=hold_reasons,
                 workflow=workflow,
                 clipboard_summary=summary,
+                auto_return_to_list=auto_return_enabled,
                 demo_mode=demo_mode_enabled,
             )
 
@@ -218,9 +222,14 @@ def view_settings():
             else:
                 if _persist_config(updated_config):
                     flash("Settings updated", "success")
+                    redirect_target = (
+                        "tickets.list_tickets"
+                        if updated_config.auto_return_to_list
+                        else "settings.view_settings"
+                    )
                     return redirect(
                         url_for(
-                            "settings.view_settings",
+                            redirect_target,
                             compact=_compact_query_value(compact_mode),
                         )
                     )

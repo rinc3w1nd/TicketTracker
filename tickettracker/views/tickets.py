@@ -725,13 +725,15 @@ def edit_ticket(ticket_id: int):
         _store_attachments(request.files.getlist("attachments"), ticket)
         db.session.commit()
         flash("Ticket updated", "success")
-        return redirect(
-            url_for(
-                "tickets.ticket_detail",
-                ticket_id=ticket.id,
-                compact=_compact_query_value(compact_mode),
-            )
+        redirect_endpoint = (
+            "tickets.list_tickets"
+            if config.auto_return_to_list
+            else "tickets.ticket_detail"
         )
+        redirect_kwargs = {"compact": _compact_query_value(compact_mode)}
+        if redirect_endpoint == "tickets.ticket_detail":
+            redirect_kwargs["ticket_id"] = ticket.id
+        return redirect(url_for(redirect_endpoint, **redirect_kwargs))
 
     return render_template(
         "ticket_form.html",
@@ -799,13 +801,15 @@ def add_update(ticket_id: int):
 
     db.session.commit()
     flash("Update added", "success")
-    return redirect(
-        url_for(
-            "tickets.ticket_detail",
-            ticket_id=ticket.id,
-            compact=_compact_query_value(compact_mode),
-        )
+    redirect_endpoint = (
+        "tickets.list_tickets"
+        if config.auto_return_to_list
+        else "tickets.ticket_detail"
     )
+    redirect_kwargs = {"compact": _compact_query_value(compact_mode)}
+    if redirect_endpoint == "tickets.ticket_detail":
+        redirect_kwargs["ticket_id"] = ticket.id
+    return redirect(url_for(redirect_endpoint, **redirect_kwargs))
 
 
 @tickets_bp.route("/attachments/<int:attachment_id>")

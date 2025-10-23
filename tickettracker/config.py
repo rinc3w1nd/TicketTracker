@@ -98,6 +98,9 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         },
     },
     "clipboard_summary": DEFAULT_CLIPBOARD_SUMMARY,
+    "behavior": {
+        "auto_return_to_list": False,
+    },
     "demo_mode": False,
 }
 
@@ -269,6 +272,7 @@ class AppConfig:
     sla: SLAConfig
     colors: ColorConfig
     clipboard_summary: ClipboardSummaryConfig
+    auto_return_to_list: bool = False
     demo_mode: bool = False
     source_path: Optional[Path] = None
 
@@ -290,6 +294,9 @@ class AppConfig:
             "sla": self.sla.to_dict(),
             "colors": self.colors.to_dict(),
             "clipboard_summary": self.clipboard_summary.to_dict(),
+            "behavior": {
+                "auto_return_to_list": bool(self.auto_return_to_list),
+            },
             "demo_mode": bool(self.demo_mode),
         }
 
@@ -582,6 +589,12 @@ def load_config(config_path: Optional[os.PathLike[str] | str] = None) -> AppConf
         inline_styles=inline_styles,
     )
 
+    behavior_config = merged.get("behavior", {})
+    auto_return_to_list = _coerce_bool(
+        behavior_config.get("auto_return_to_list"),
+        default=DEFAULT_CONFIG.get("behavior", {}).get("auto_return_to_list", False),
+    )
+
     demo_mode = _coerce_bool(merged.get("demo_mode"), default=False)
 
     return AppConfig(
@@ -605,6 +618,7 @@ def load_config(config_path: Optional[os.PathLike[str] | str] = None) -> AppConf
             ticket_title=ticket_title_color,
         ),
         clipboard_summary=clipboard_summary,
+        auto_return_to_list=auto_return_to_list,
         demo_mode=demo_mode,
         source_path=source_path,
     )
