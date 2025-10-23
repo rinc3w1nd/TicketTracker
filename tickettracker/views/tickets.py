@@ -3,9 +3,11 @@ from __future__ import annotations
 
 import colorsys
 import math
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Iterable, List
+from urllib.parse import urlparse
 
 from flask import (
     Blueprint,
@@ -293,25 +295,140 @@ def _annotate_due_state(ticket: Ticket, config: AppConfig) -> None:
     ticket.due_badge_color = badge_color  # type: ignore[attr-defined]
 
 
-def _compose_compact_tooltip(ticket: Ticket) -> str | None:
-    """Return a tooltip summarizing requester, watchers, and links."""
+@dataclass(frozen=True)
+class TooltipLink:
+    """Normalized link metadata rendered in compact tooltips."""
 
-    details: List[str] = []
+    label: str
+    href: str | None
+    is_external: bool = False
 
-    if ticket.requester:
-        details.append(f"Requester: {ticket.requester}")
 
-    watchers = ticket.watchers
-    if watchers:
-        details.append(f"Watchers: {', '.join(watchers)}")
+@dataclass(frozen=True)
+class TooltipAttachment:
+    """Attachment metadata rendered in compact tooltips."""
 
-    if ticket.links:
-        details.append(f"Links: {ticket.links}")
+    id: int
+    display_name: str
+    download_url: str
+    meta: str | None = None
 
-    if not details:
+
+@dataclass
+class TicketTooltipContext:
+    """Context describing quick ticket details for tooltip rendering."""
+
+    requester: str | None = None
+    watchers: List[str] = field(default_factory=list)
+    links: List[TooltipLink] = field(default_factory=list)
+    attachments: List[TooltipAttachment] = field(default_factory=list)
+
+    def is_empty(self) -> bool:
+        return not any((self.requester, self.watchers, self.links, self.attachments))
+
+
+def _compose_compact_tooltip(ticket: Ticket) -> TicketTooltipContext | None:
+    """Return structured tooltip content for compact ticket cards."""
+
+    requester = (ticket.requester or "").strip() or None
+    watchers = [watcher for watcher in ticket.watchers if watcher]
+    links = _normalize_tooltip_links(ticket.links)
+    attachments = _build_tooltip_attachments(ticket.attachments)
+
+    context = TicketTooltipContext(
+        requester=requester,
+        watchers=watchers,
+        links=links,
+        attachments=attachments,
+    )
+
+    if context.is_empty():
         return None
 
-    return " • ".join(details)
+    return context
+
+
+def _normalize_tooltip_links(raw_links: str | None) -> List[TooltipLink]:
+    if not raw_links:
+        return []
+
+    normalized = raw_links.replace("\r\n", "\n").replace("\r", "\n")
+    segments = [segment.strip() for segment in normalized.split("\n") if segment.strip()]
+
+    links: List[TooltipLink] = []
+    for entry in segments:
+        href = _resolve_link_href(entry)
+        is_external = bool(href) and _is_external_href(href)
+        links.append(TooltipLink(label=entry, href=href, is_external=is_external))
+    return links
+
+
+def _resolve_link_href(entry: str) -> str | None:
+    parsed = urlparse(entry)
+    if parsed.scheme in {"http", "https"} and parsed.netloc:
+        return entry
+    if parsed.scheme in {"mailto", "tel"} and (parsed.path or parsed.netloc):
+        return entry
+    if entry.startswith(("/", "#")):
+        return entry
+    return None
+
+
+def _is_external_href(href: str) -> bool:
+    parsed = urlparse(href)
+    return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
+
+
+def _build_tooltip_attachments(attachments: Iterable[Attachment]) -> List[TooltipAttachment]:
+    tooltip_attachments: List[TooltipAttachment] = []
+    for attachment in attachments:
+        if attachment.id is None:
+            continue
+        meta = _format_attachment_meta(attachment)
+        tooltip_attachments.append(
+            TooltipAttachment(
+                id=attachment.id,
+                display_name=attachment.display_name,
+                download_url=url_for(
+                    "tickets.download_attachment", attachment_id=attachment.id
+                ),
+                meta=meta,
+            )
+        )
+    return tooltip_attachments
+
+
+def _format_attachment_meta(attachment: Attachment) -> str | None:
+    details: List[str] = []
+
+    size_label = _format_file_size(attachment.size)
+    if size_label:
+        details.append(size_label)
+
+    if attachment.mimetype:
+        details.append(attachment.mimetype)
+
+    if attachment.uploaded_at:
+        details.append(attachment.uploaded_at.strftime("%b %d, %Y %H:%M"))
+
+    return " · ".join(details) if details else None
+
+
+def _format_file_size(size: int | None) -> str | None:
+    if size is None or size < 0:
+        return None
+
+    if size < 1024:
+        return f"{size} B"
+
+    units = ["KB", "MB", "GB", "TB", "PB"]
+    value = float(size)
+    for unit in units:
+        value /= 1024.0
+        if value < 1024.0:
+            break
+    formatted = f"{value:.1f}".rstrip("0").rstrip(".")
+    return f"{formatted} {unit}"
 
 
 def _boost_overdue_rgb(red: int, green: int, blue: int) -> tuple[int, int, int]:
