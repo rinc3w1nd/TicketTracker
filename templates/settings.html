@@ -66,7 +66,7 @@
         <table class="clipboard-sections-table">
           <thead>
             <tr>
-              <th scope="col">Section</th>
+              <th scope="col">Section - Description</th>
               <th scope="col">HTML</th>
               <th scope="col">Text</th>
             </tr>
@@ -75,10 +75,9 @@
             {% for section, description in clipboard_sections %}
               <tr>
                 <th scope="row">
-                  <div class="clipboard-section-label">
-                    <code>{{ section }}</code>
-                    <p>{{ description }}</p>
-                  </div>
+                  <span class="clipboard-section-label">
+                    <code>{{ section }}</code> - {{ description }}
+                  </span>
                 </th>
                 <td>
                   <label class="checkbox-label">
@@ -106,11 +105,6 @@
             {% endfor %}
           </tbody>
         </table>
-        <p class="help">Select the sections to include in clipboard exports.</p>
-        <p class="help">
-          If no text sections are selected, the HTML selection is reused for plain text
-          summaries. Custom sections configured elsewhere appear at the end of the list.
-        </p>
       </fieldset>
 
       <div class="field-group">
