@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
+from typing import List
 from urllib.parse import parse_qs, urlparse
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -14,7 +15,11 @@ from flask import current_app
 from werkzeug.datastructures import MultiDict
 
 from tickettracker.app import create_app
-from tickettracker.config import DEFAULT_CONFIG, load_config
+from tickettracker.config import (
+    DEFAULT_CONFIG,
+    DEFAULT_PRIORITY_STAGE_DAYS_FALLBACK,
+    load_config,
+)
 
 
 def _write_config(target: Path, data: dict) -> Path:
@@ -27,6 +32,28 @@ def _default_config() -> dict:
 
 
 def _settings_form_data(config_data: dict, **overrides: object) -> dict:
+    sla_config = config_data.get("sla", {})
+    default_due_days = sla_config.get("default_due_days")
+    due_stage_days = [str(value) for value in sla_config.get("due_stage_days", [])]
+    priority_stage_days = {
+        str(priority): list(values)
+        for priority, values in sla_config.get("priority_stage_days", {}).items()
+    }
+    base_due_stage_days = DEFAULT_CONFIG.get("sla", {}).get("due_stage_days", [])
+    stage_lengths = [len(due_stage_days), len(base_due_stage_days)]
+    stage_lengths.extend(len(values) for values in priority_stage_days.values())
+    stage_count = max(stage_lengths) if stage_lengths else len(base_due_stage_days)
+    if stage_count <= 0:
+        stage_count = 1
+
+    due_stage_payload = list(due_stage_days)
+    if len(due_stage_payload) < stage_count:
+        due_stage_payload.extend([""] * (stage_count - len(due_stage_payload)))
+
+    base_priority_defaults = DEFAULT_CONFIG.get("sla", {}).get(
+        "priority_stage_days", {}
+    )
+
     payload = {
         "default_submitted_by": config_data["default_submitted_by"],
         "priorities": "\n".join(config_data["priorities"]),
@@ -35,7 +62,27 @@ def _settings_form_data(config_data: dict, **overrides: object) -> dict:
         "html_sections": "\n".join(config_data["clipboard_summary"]["html_sections"]),
         "text_sections": "\n".join(config_data["clipboard_summary"]["text_sections"]),
         "updates_limit": str(config_data["clipboard_summary"]["updates_limit"]),
+        "default_due_days": "" if default_due_days is None else str(default_due_days),
+        "due_stage_days": due_stage_payload,
     }
+
+    priority_values: dict[str, list[str]] = {}
+    for priority in config_data.get("priorities", []):
+        configured = priority_stage_days.get(priority)
+        if configured:
+            values = [str(value) for value in configured]
+        else:
+            fallback = base_priority_defaults.get(priority)
+            if fallback is None:
+                fallback = DEFAULT_PRIORITY_STAGE_DAYS_FALLBACK
+            values = [str(value) for value in fallback]
+        if len(values) < stage_count:
+            values.extend([""] * (stage_count - len(values)))
+        priority_values[priority] = values
+
+    for priority, values in priority_values.items():
+        payload[f"priority_stage_days[{priority}]"] = values
+
     payload.update(overrides)
     return payload
 
@@ -154,8 +201,64 @@ def test_settings_update_persists_between_app_starts(tmp_path):
             "updates",
         ]
         assert reloaded_config.clipboard_summary.updates_limit == 3
-        assert reloaded_config.clipboard_summary.debug_status is False
+    assert reloaded_config.clipboard_summary.debug_status is False
 
+
+def test_update_sla_settings(tmp_path):
+    config_data = _default_config()
+    config_path = _write_config(tmp_path / "config.json", config_data)
+
+    app = create_app(config_path)
+    client = app.test_client()
+
+    due_stage_values = ["30", "20", "10", "5"]
+    priority_stage_values = {
+        "Low": ["15", "20", "25", "30"],
+        "Medium": ["12", "18", "22", "28"],
+        "High": ["8", "12", "16", "20"],
+        "Critical": ["4", "6", "8", "10"],
+    }
+
+    data_items: List[tuple[str, str]] = [
+        ("default_submitted_by", config_data["default_submitted_by"]),
+        ("priorities", "\n".join(config_data["priorities"])),
+        ("hold_reasons", "\n".join(config_data["hold_reasons"])),
+        ("workflow", "\n".join(config_data["workflow"])),
+        ("updates_limit", str(config_data["clipboard_summary"]["updates_limit"])),
+        ("default_due_days", "35"),
+    ]
+
+    for section in config_data["clipboard_summary"]["html_sections"]:
+        data_items.append(("html_sections", section))
+    for section in config_data["clipboard_summary"]["text_sections"]:
+        data_items.append(("text_sections", section))
+
+    for value in due_stage_values:
+        data_items.append(("due_stage_days", value))
+
+    for priority, values in priority_stage_values.items():
+        for value in values:
+            data_items.append((f"priority_stage_days[{priority}]", value))
+
+    response = client.post(
+        "/settings",
+        data=MultiDict(data_items),
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+
+    persisted = json.loads(config_path.read_text())
+    assert persisted["sla"]["default_due_days"] == 35
+    assert persisted["sla"]["due_stage_days"] == [30, 20, 10, 5]
+    assert persisted["sla"]["priority_stage_days"]["Low"] == [15, 20, 25, 30]
+    assert persisted["sla"]["priority_stage_days"]["Critical"] == [4, 6, 8, 10]
+
+    with app.app_context():
+        sla_config = current_app.config["APP_CONFIG"].sla
+        assert sla_config.default_due_days == 35
+        assert sla_config.due_stage_days == [30, 20, 10, 5]
+        assert sla_config.priority_stage_days["Medium"] == [12, 18, 22, 28]
 
 def test_settings_redirects_to_settings_when_auto_return_disabled(tmp_path):
     config_data = _default_config()
