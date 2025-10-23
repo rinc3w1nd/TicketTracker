@@ -260,6 +260,80 @@ def test_update_sla_settings(tmp_path):
         assert sla_config.due_stage_days == [30, 20, 10, 5]
         assert sla_config.priority_stage_days["Medium"] == [12, 18, 22, 28]
 
+
+def test_update_color_palette(tmp_path):
+    config_data = _default_config()
+    config_path = _write_config(tmp_path / "config.json", config_data)
+
+    app = create_app(config_path)
+    client = app.test_client()
+
+    payload = _settings_form_data(config_data)
+    payload.update(
+        {
+            "colors_hex[ticket_title]": "ddeeff",
+            "colors_hex[gradient][stage0]": "#112233",
+            "colors_hex[gradient][stage1]": "#223344",
+            "colors_hex[gradient][stage2]": "",
+            "colors_hex[gradient][stage3]": "#556677",
+            "colors_hex[gradient][overdue]": "#778899",
+            "colors_hex[statuses][resolved]": "336699",
+            "colors_hex[statuses][on_hold]": "",
+            "colors_hex[priorities][Low]": "",
+            "colors_hex[priorities][Medium]": "#00aa00",
+            "colors_hex[priorities][High]": "#abc",
+            "colors_hex[priorities][Critical]": "#123456",
+            "colors_hex[tags][background]": "#010203",
+            "colors_hex[tags][text]": "#fefefe",
+        }
+    )
+
+    response = client.post(
+        "/settings",
+        data=payload,
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+
+    persisted = json.loads(config_path.read_text())
+    colors = persisted["colors"]
+    defaults = DEFAULT_CONFIG["colors"]
+
+    assert colors["ticket_title"] == "#DDEEFF"
+    assert colors["gradient"]["stage0"] == "#112233"
+    assert colors["gradient"]["stage1"] == "#223344"
+    assert colors["gradient"]["stage2"] == defaults["gradient"]["stage2"].upper()
+    assert colors["gradient"]["stage3"] == "#556677"
+    assert colors["gradient"]["overdue"] == "#778899"
+    assert colors["statuses"]["resolved"] == "#336699"
+    assert colors["statuses"]["on_hold"] == defaults["statuses"]["on_hold"].upper()
+    assert colors["priorities"]["High"] == "#AABBCC"
+    assert colors["priorities"]["Medium"] == "#00AA00"
+    assert colors["priorities"]["Critical"] == "#123456"
+    assert colors["priorities"]["Low"] == defaults["priorities"]["Low"].upper()
+    assert colors["tags"]["background"] == "#010203"
+    assert colors["tags"]["text"] == "#FEFEFE"
+
+    with app.app_context():
+        updated_config = current_app.config["APP_CONFIG"]
+        assert updated_config.colors.ticket_title == "#DDEEFF"
+        assert updated_config.colors.gradient_color("stage2") == defaults["gradient"][
+            "stage2"
+        ].upper()
+        assert updated_config.colors.statuses["resolved"] == "#336699"
+        assert updated_config.colors.priorities["High"] == "#AABBCC"
+
+    reloaded_app = create_app(config_path)
+    with reloaded_app.app_context():
+        reloaded_config = current_app.config["APP_CONFIG"]
+        assert reloaded_config.colors.ticket_title == "#DDEEFF"
+        assert reloaded_config.colors.gradient["stage0"] == "#112233"
+        assert reloaded_config.colors.statuses["on_hold"] == defaults["statuses"][
+            "on_hold"
+        ].upper()
+        assert reloaded_config.colors.priorities["Medium"] == "#00AA00"
+
 def test_settings_redirects_to_settings_when_auto_return_disabled(tmp_path):
     config_data = _default_config()
     config_path = _write_config(tmp_path / "config.json", config_data)

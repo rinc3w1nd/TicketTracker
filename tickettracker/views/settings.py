@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 from copy import deepcopy
-from typing import Dict, List, Tuple
+from typing import Dict, List, Mapping, Tuple
 
 from flask import (
     Blueprint,
@@ -18,7 +18,15 @@ from flask import (
 from ..config import (
     AppConfig,
     DEFAULT_CONFIG,
+    DEFAULT_GRADIENT_COLORS,
+    DEFAULT_PRIORITY_COLORS,
     DEFAULT_PRIORITY_STAGE_DAYS_FALLBACK,
+    DEFAULT_STATUS_COLORS,
+    DEFAULT_TAG_COLORS,
+    DEFAULT_TICKET_TITLE_COLOR,
+    GRADIENT_OVERDUE_KEY,
+    GRADIENT_STAGE_ORDER,
+    normalize_hex_color,
     save_config,
 )
 from ..demo import DemoModeError, get_demo_manager
@@ -108,7 +116,317 @@ def _parse_multiline_field(raw_value: str | None) -> List[str]:
     return entries
 
 
+def _color_palette_defaults(config: AppConfig) -> Dict[str, Dict[str, str] | str]:
+    """Return default color values for palette sections, including fallbacks."""
+
+    primary_fallback = (
+        normalize_hex_color(DEFAULT_GRADIENT_COLORS[GRADIENT_STAGE_ORDER[0]])
+        or DEFAULT_GRADIENT_COLORS[GRADIENT_STAGE_ORDER[0]]
+    )
+
+    gradient_defaults: Dict[str, str] = {}
+    for key in [*GRADIENT_STAGE_ORDER, GRADIENT_OVERDUE_KEY]:
+        default_value = normalize_hex_color(DEFAULT_GRADIENT_COLORS.get(key))
+        gradient_defaults[str(key)] = default_value or primary_fallback
+    for key in config.colors.gradient.keys():
+        key_str = str(key)
+        if key_str not in gradient_defaults:
+            gradient_defaults[key_str] = primary_fallback
+
+    status_defaults: Dict[str, str] = {}
+    for key, value in DEFAULT_STATUS_COLORS.items():
+        status_defaults[str(key)] = normalize_hex_color(value) or primary_fallback
+    for key in config.colors.statuses.keys():
+        key_str = str(key)
+        if key_str not in status_defaults:
+            status_defaults[key_str] = primary_fallback
+
+    priority_defaults: Dict[str, str] = {}
+    base_priority_defaults = {
+        str(priority): color for priority, color in DEFAULT_PRIORITY_COLORS.items()
+    }
+    for priority in config.priorities:
+        key_str = str(priority)
+        default_value = base_priority_defaults.get(key_str)
+        normalized = normalize_hex_color(default_value)
+        priority_defaults[key_str] = normalized or primary_fallback
+    for key in config.colors.priorities.keys():
+        key_str = str(key)
+        if key_str not in priority_defaults:
+            default_value = base_priority_defaults.get(key_str)
+            normalized = normalize_hex_color(default_value)
+            priority_defaults[key_str] = normalized or primary_fallback
+
+    tag_defaults: Dict[str, str] = {}
+    for key, value in DEFAULT_TAG_COLORS.items():
+        tag_defaults[str(key)] = normalize_hex_color(value) or primary_fallback
+    for key in config.colors.tags.keys():
+        key_str = str(key)
+        if key_str not in tag_defaults:
+            tag_defaults[key_str] = primary_fallback
+
+    ticket_title_default = (
+        normalize_hex_color(DEFAULT_TICKET_TITLE_COLOR)
+        or DEFAULT_TICKET_TITLE_COLOR
+    )
+
+    return {
+        "ticket_title": ticket_title_default,
+        "gradient": gradient_defaults,
+        "statuses": status_defaults,
+        "priorities": priority_defaults,
+        "tags": tag_defaults,
+    }
+
+
+def _color_palette_display(config: AppConfig) -> Dict[str, Dict[str, Dict[str, str]]]:
+    """Return palette data structure used to populate the settings form."""
+
+    defaults = _color_palette_defaults(config)
+
+    palette: Dict[str, Dict[str, Dict[str, str]]] = {
+        "ticket_title": {
+            "value": defaults["ticket_title"],
+            "text": defaults["ticket_title"],
+            "default": defaults["ticket_title"],
+        }
+    }
+
+    for category in ("gradient", "statuses", "priorities", "tags"):
+        palette[category] = {
+            key: {"value": value, "text": value, "default": value}
+            for key, value in defaults.get(category, {}).items()
+        }
+
+    ticket_value = normalize_hex_color(config.colors.ticket_title)
+    if ticket_value:
+        palette["ticket_title"]["value"] = ticket_value
+        palette["ticket_title"]["text"] = ticket_value
+
+    for category_name, source in [
+        ("gradient", config.colors.gradient),
+        ("statuses", config.colors.statuses),
+        ("priorities", config.colors.priorities),
+        ("tags", config.colors.tags),
+    ]:
+        for key, value in source.items():
+            key_str = str(key)
+            normalized = normalize_hex_color(value)
+            if not normalized:
+                continue
+            category = palette.setdefault(category_name, {})
+            entry = category.setdefault(
+                key_str,
+                {
+                    "value": normalized,
+                    "text": normalized,
+                    "default": defaults.get(category_name, {}).get(
+                        key_str, normalized
+                    ),
+                },
+            )
+            entry["value"] = normalized
+            entry["text"] = normalized
+            entry.setdefault(
+                "default",
+                defaults.get(category_name, {}).get(key_str, normalized),
+            )
+
+    return palette
+
+
+def _color_category_entries(
+    config: AppConfig, palette: Dict[str, Dict[str, Dict[str, str]]]
+) -> List[Tuple[str, str, List[Dict[str, object]]]]:
+    """Return ordered palette entries grouped by section for rendering and parsing."""
+
+    sections: List[Tuple[str, str, List[Dict[str, object]]]] = []
+
+    ticket_entry = palette.get("ticket_title")
+    if isinstance(ticket_entry, dict):
+        sections.append(
+            (
+                "ticket_title",
+                "Ticket title",
+                [
+                    {
+                        "key": "ticket_title",
+                        "label": "Ticket title",
+                        "entry": ticket_entry,
+                        "field_name": "colors[ticket_title]",
+                        "text_field_name": "colors_hex[ticket_title]",
+                    }
+                ],
+            )
+        )
+
+    gradient_entries: List[Dict[str, object]] = []
+    gradient_palette = palette.get("gradient", {})
+    gradient_order = [*GRADIENT_STAGE_ORDER, GRADIENT_OVERDUE_KEY]
+    for key in gradient_palette.keys():
+        key_str = str(key)
+        if key_str not in gradient_order:
+            gradient_order.append(key_str)
+    for key in gradient_order:
+        entry = gradient_palette.get(str(key))
+        if not entry:
+            continue
+        if key == GRADIENT_OVERDUE_KEY:
+            label = "Overdue"
+        elif key in GRADIENT_STAGE_ORDER:
+            label = f"Stage {GRADIENT_STAGE_ORDER.index(key) + 1}"
+        else:
+            label = str(key).replace("_", " ").title()
+        gradient_entries.append(
+            {
+                "key": str(key),
+                "label": label,
+                "entry": entry,
+                "field_name": f"colors[gradient][{key}]",
+                "text_field_name": f"colors_hex[gradient][{key}]",
+            }
+        )
+    if gradient_entries:
+        sections.append(("gradient", "Gradient stages", gradient_entries))
+
+    status_entries: List[Dict[str, object]] = []
+    status_palette = palette.get("statuses", {})
+    status_order = list(DEFAULT_STATUS_COLORS.keys())
+    for key in status_palette.keys():
+        key_str = str(key)
+        if key_str not in status_order:
+            status_order.append(key_str)
+    for key in status_order:
+        entry = status_palette.get(str(key))
+        if not entry:
+            continue
+        label = str(key).replace("_", " ").title()
+        status_entries.append(
+            {
+                "key": str(key),
+                "label": label,
+                "entry": entry,
+                "field_name": f"colors[statuses][{key}]",
+                "text_field_name": f"colors_hex[statuses][{key}]",
+            }
+        )
+    if status_entries:
+        sections.append(("statuses", "Status overrides", status_entries))
+
+    priority_entries: List[Dict[str, object]] = []
+    priority_palette = palette.get("priorities", {})
+    priority_order = list(
+        dict.fromkeys([*(str(priority) for priority in config.priorities), *priority_palette.keys()])
+    )
+    for key in priority_order:
+        entry = priority_palette.get(str(key))
+        if not entry:
+            continue
+        priority_entries.append(
+            {
+                "key": str(key),
+                "label": str(key),
+                "entry": entry,
+                "field_name": f"colors[priorities][{key}]",
+                "text_field_name": f"colors_hex[priorities][{key}]",
+            }
+        )
+    if priority_entries:
+        sections.append(("priorities", "Priority colors", priority_entries))
+
+    tag_entries: List[Dict[str, object]] = []
+    tag_palette = palette.get("tags", {})
+    tag_order = list(DEFAULT_TAG_COLORS.keys())
+    for key in tag_palette.keys():
+        key_str = str(key)
+        if key_str not in tag_order:
+            tag_order.append(key_str)
+    for key in tag_order:
+        entry = tag_palette.get(str(key))
+        if not entry:
+            continue
+        label = str(key).replace("_", " ").title()
+        tag_entries.append(
+            {
+                "key": str(key),
+                "label": label,
+                "entry": entry,
+                "field_name": f"colors[tags][{key}]",
+                "text_field_name": f"colors_hex[tags][{key}]",
+            }
+        )
+    if tag_entries:
+        sections.append(("tags", "Tag colors", tag_entries))
+
+    return sections
+
+
+def _process_color_entry(
+    form_data: Mapping[str, str],
+    entry_info: Dict[str, object],
+    invalid_labels: List[str],
+) -> None:
+    """Apply submitted values to a color entry, tracking validation errors."""
+
+    entry = entry_info["entry"]
+    if not isinstance(entry, dict):
+        return
+
+    default_value = str(entry.get("default", entry.get("value", "")))
+    field_name = str(entry_info.get("field_name", ""))
+    text_field_name = str(entry_info.get("text_field_name", ""))
+
+    color_value = str(form_data.get(field_name, "")).strip()
+    text_value = str(form_data.get(text_field_name, "")).strip()
+    chosen_value = text_value or color_value
+
+    if not chosen_value:
+        entry["value"] = default_value
+        entry["text"] = ""
+        return
+
+    normalized = normalize_hex_color(chosen_value)
+    if normalized is None:
+        entry["text"] = chosen_value
+        entry.setdefault("value", default_value)
+        label = str(entry_info.get("label", "color"))
+        invalid_labels.append(label)
+        return
+
+    entry["value"] = normalized
+    entry["text"] = normalized
+
+
+def _color_sections(
+    config: AppConfig, palette: Dict[str, Dict[str, Dict[str, str]]]
+) -> List[Dict[str, object]]:
+    """Return palette metadata for rendering the settings form."""
+
+    sections: List[Dict[str, object]] = []
+    for name, label, entries in _color_category_entries(config, palette):
+        section_entries: List[Dict[str, object]] = []
+        for entry_info in entries:
+            entry = entry_info["entry"]
+            if not isinstance(entry, dict):
+                continue
+            section_entries.append(
+                {
+                    "key": entry_info["key"],
+                    "label": entry_info["label"],
+                    "value": entry.get("value", entry.get("default")),
+                    "text": entry.get("text", entry.get("value")),
+                    "default": entry.get("default", entry.get("value")),
+                    "field_name": entry_info["field_name"],
+                    "text_field_name": entry_info["text_field_name"],
+                }
+            )
+        if section_entries:
+            sections.append({"name": name, "label": label, "entries": section_entries})
+    return sections
+
 def _form_defaults(config: AppConfig) -> Dict[str, object]:
+    color_palette = _color_palette_display(config)
+
     html_sections = (
         list(config.clipboard_summary.html_sections)
         or config.clipboard_summary.sections_for_html()
@@ -171,6 +489,7 @@ def _form_defaults(config: AppConfig) -> Dict[str, object]:
         "due_stage_days": padded_due_stage_days,
         "priority_stage_days": display_priority_stage_days,
         "sla_stage_count": stage_count,
+        "color_palette": color_palette,
     }
 
 
@@ -198,6 +517,13 @@ def view_settings():
         debug_status_enabled = request.form.get("clipboard_debug_status") is not None
         auto_return_enabled = request.form.get("auto_return_to_list") is not None
         demo_mode_enabled = request.form.get("demo_mode") is not None
+
+        color_palette = _color_palette_display(config)
+        color_entries = _color_category_entries(config, color_palette)
+        invalid_color_labels: List[str] = []
+        for _, _, entries in color_entries:
+            for entry_info in entries:
+                _process_color_entry(request.form, entry_info, invalid_color_labels)
 
         section_names = [name for name, _ in section_options]
 
@@ -258,6 +584,7 @@ def view_settings():
             "due_stage_days": due_stage_display,
             "priority_stage_days": padded_priority_display,
             "sla_stage_count": stage_count,
+            "color_palette": color_palette,
         }
 
         errors: List[str] = []
@@ -366,6 +693,14 @@ def view_settings():
         else:
             default_due_days_value = None
 
+        if invalid_color_labels:
+            unique_labels = list(dict.fromkeys(invalid_color_labels))
+            errors.append(
+                "Provide valid hex colors (example #AABBCC) for: "
+                + ", ".join(unique_labels)
+                + "."
+            )
+
         should_enable_demo = demo_mode_enabled and not config.demo_mode
         should_disable_demo = not demo_mode_enabled and config.demo_mode
 
@@ -373,6 +708,44 @@ def view_settings():
             for message in errors:
                 flash(message, "error")
         else:
+            gradient_colors: Dict[str, str] = {}
+            for key, entry in color_palette.get("gradient", {}).items():
+                normalized = normalize_hex_color(entry.get("value")) or normalize_hex_color(
+                    entry.get("default")
+                )
+                if normalized:
+                    gradient_colors[str(key)] = normalized
+
+            status_colors: Dict[str, str] = {}
+            for key, entry in color_palette.get("statuses", {}).items():
+                normalized = normalize_hex_color(entry.get("value")) or normalize_hex_color(
+                    entry.get("default")
+                )
+                if normalized:
+                    status_colors[str(key)] = normalized
+
+            priority_colors: Dict[str, str] = {}
+            for key, entry in color_palette.get("priorities", {}).items():
+                normalized = normalize_hex_color(entry.get("value")) or normalize_hex_color(
+                    entry.get("default")
+                )
+                if normalized:
+                    priority_colors[str(key)] = normalized
+
+            tag_colors: Dict[str, str] = {}
+            for key, entry in color_palette.get("tags", {}).items():
+                normalized = normalize_hex_color(entry.get("value")) or normalize_hex_color(
+                    entry.get("default")
+                )
+                if normalized:
+                    tag_colors[str(key)] = normalized
+
+            ticket_title_value = normalize_hex_color(
+                color_palette.get("ticket_title", {}).get("value")
+            ) or normalize_hex_color(color_palette.get("ticket_title", {}).get("default"))
+            if not ticket_title_value:
+                ticket_title_value = DEFAULT_TICKET_TITLE_COLOR
+
             summary = replace(
                 config.clipboard_summary,
                 html_sections=html_sections,
@@ -388,6 +761,15 @@ def view_settings():
                 default_due_days=default_due_days_value,
             )
 
+            updated_colors = replace(
+                config.colors,
+                gradient=gradient_colors,
+                statuses=status_colors,
+                priorities=priority_colors,
+                tags=tag_colors,
+                ticket_title=ticket_title_value,
+            )
+
             updated_config = replace(
                 config,
                 default_submitted_by=default_submitted_by,
@@ -398,6 +780,7 @@ def view_settings():
                 auto_return_to_list=auto_return_enabled,
                 demo_mode=demo_mode_enabled,
                 sla=updated_sla,
+                colors=updated_colors,
             )
 
             toggle_error = False
@@ -447,6 +830,7 @@ def view_settings():
                         )
 
     demo_status = demo_manager.status()
+    color_sections = _color_sections(config, form_data.get("color_palette", {}))
 
     return render_template(
         "settings.html",
@@ -458,6 +842,7 @@ def view_settings():
             "settings.view_settings", compact_mode
         ),
         clipboard_sections=section_options,
+        color_sections=color_sections,
         sla_stage_labels=[
             f"Stage {index + 1}" for index in range(form_data.get("sla_stage_count", 0))
         ],
