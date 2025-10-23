@@ -785,8 +785,16 @@ body.compact .filter-fields .filter-actions {
   align-items: flex-start;
 }
 
-.ticket-card .title-group h2 {
-  margin-bottom: 0.35rem;
+.ticket-card .title-group,
+.ticket-detail > header .title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.ticket-card .title-group h2,
+.ticket-detail > header .title-group h2 {
+  margin: 0;
 }
 
 .ticket-title {
