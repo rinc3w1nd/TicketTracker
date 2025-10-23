@@ -131,6 +131,17 @@
   text-decoration: none;
 }
 
+.ticket-tooltip__links a,
+.ticket-tooltip__links span {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.ticket-tooltip__links span {
+  color: var(--ticket-title-color, #f8fafc);
+  font-weight: 500;
+}
+
 .ticket-tooltip__attachments a:hover,
 .ticket-tooltip__attachments a:focus-visible,
 .ticket-tooltip__links a:hover,
