@@ -21,7 +21,7 @@
 {% set tag_text_color = config.colors.tags.get('text', '#e2e8f0') %}
 {% set raw_summary_id = ticket.id if ticket.id is not none else 'preview' %}
 {% set summary_identifier = ('ticket-' ~ raw_summary_id)|replace(' ', '-')|replace('"', '')|replace("'", '') %}
-{% set article_properties = [
+{% set article_variable_styles = [
   '--ticket-accent: ' ~ accent_color,
   '--ticket-tint: ' ~ tint_color,
   '--ticket-title-color: ' ~ title_color,
@@ -53,7 +53,7 @@
   "line-height: 1.6",
   "box-shadow: " ~ article_shadow,
 ] %}
-{% set article_style_parts = article_properties + article_required_styles + (article_optional_styles if use_inline_styles else []) %}
+{% set article_style_parts = article_variable_styles + article_required_styles + (article_optional_styles if use_inline_styles else []) %}
 {% set article_style = article_style_parts | join('; ') %}
 {% set header_style = "display: flex; justify-content: space-between; gap: 18px; align-items: flex-start; margin-bottom: 18px; padding: 18px; border-radius: 24px; background: " ~ section_strong_background ~ "; border: 1px solid " ~ section_border ~ "; box-shadow: " ~ section_shadow ~ ";" if use_inline_styles else "" %}
 {% set title_group_style = "display: flex; flex-direction: column; gap: 10px;" if use_inline_styles else "" %}
@@ -99,7 +99,7 @@
 {% set timeline_meta_style = "display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; color: " ~ muted_color ~ "; margin: 0 0 4px;" if use_inline_styles else "" %}
 {% set timeline_body_style = "margin: 0 0 4px 0; color: " ~ text_color ~ ";" if use_inline_styles else "" %}
 {% set timeline_body_last_style = "margin: 0; color: " ~ text_color ~ ";" if use_inline_styles else "" %}
-{% set article_property_rules = article_properties | join(';
+{% set article_property_rules = article_variable_styles | join(';
     ') %}
 <style>
   .ticket-clipboard-summary {
