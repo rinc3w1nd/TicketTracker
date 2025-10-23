@@ -387,6 +387,18 @@
           /* ignore persistence errors */
         }
       });
+
+      document.addEventListener('click', function (event) {
+        if (!filterDetails.open) {
+          return;
+        }
+
+        if (filterDetails.contains(event.target)) {
+          return;
+        }
+
+        filterDetails.open = false;
+      });
     }
 
     const orderInput = document.querySelector('[data-sort-order]');
