@@ -39,6 +39,7 @@
               <label for="status">Status</label>
               <select id="status" name="status">
                 <option value="">All</option>
+                <option value="Active" {% if filters.status == 'Active' %}selected{% endif %}>Active</option>
                 {% for status in config.workflow %}
                   <option value="{{ status }}" {% if filters.status == status %}selected{% endif %}>{{ status }}</option>
                 {% endfor %}

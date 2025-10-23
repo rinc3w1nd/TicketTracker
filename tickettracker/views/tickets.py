@@ -710,7 +710,9 @@ def list_tickets():
     title_color = config.colors.ticket_title_color()
 
     status_filter = request.args.get("status")
-    if status_filter:
+    if status_filter == "Active":
+        query = query.filter(Ticket.status.notin_(["Closed", "Cancelled"]))
+    elif status_filter:
         query = query.filter(Ticket.status == status_filter)
 
     priority_filter = request.args.get("priority")
