@@ -11,7 +11,7 @@ from typing import Any, Dict, Iterable, List, Mapping, Optional
 
 from flask import Flask, current_app
 from sqlalchemy import delete
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from .extensions import db
 from .migrations import run_migrations
@@ -475,6 +475,172 @@ class DemoModeManager:
             snapshot_db.unlink()
         if snapshot_uploads.exists():
             shutil.rmtree(snapshot_uploads)
+
+    def persist_dataset(self) -> Path:
+        """Persist the in-memory demo dataset back to the active dataset file."""
+
+        if not self.state.active:
+            raise DemoModeError(
+                "Demo mode is not currently active; enable it before persisting."
+            )
+
+        dataset_path = self._dataset()
+        uploads_path = self._uploads_path()
+
+        try:
+            existing_payload = json.loads(dataset_path.read_text(encoding="utf-8"))
+        except FileNotFoundError:
+            existing_payload = {}
+        except json.JSONDecodeError:
+            existing_payload = {}
+
+        timestamp = datetime.utcnow().replace(tzinfo=timezone.utc)
+        metadata = dict(existing_payload.get("metadata", {}))
+        metadata["generated_at"] = timestamp.isoformat()
+
+        def _format_datetime(value: datetime | None) -> str | None:
+            if value is None:
+                return None
+            if value.tzinfo is None:
+                value = value.replace(tzinfo=timezone.utc)
+            else:
+                value = value.astimezone(timezone.utc)
+            return value.isoformat()
+
+        def _format_date(value: date | None) -> str | None:
+            return value.isoformat() if value else None
+
+        uploads_root = uploads_path
+
+        def _relative_stored_name(stored: str) -> str:
+            candidate = Path(stored)
+            try:
+                return candidate.relative_to(uploads_root).as_posix()
+            except ValueError:
+                return candidate.as_posix()
+
+        def _serialize_attachment(attachment: Attachment) -> Dict[str, Any]:
+            data: Dict[str, Any] = {
+                "original_filename": attachment.original_filename,
+                "stored_filename": _relative_stored_name(attachment.stored_filename),
+            }
+            if attachment.mimetype:
+                data["mimetype"] = attachment.mimetype
+            if attachment.size is not None:
+                data["size"] = attachment.size
+            if attachment.checksum:
+                data["checksum"] = attachment.checksum
+            if attachment.file_uuid:
+                data["file_uuid"] = attachment.file_uuid
+            uploaded_at = _format_datetime(attachment.uploaded_at)
+            if uploaded_at:
+                data["uploaded_at"] = uploaded_at
+            return data
+
+        ticket_query = (
+            Ticket.query.options(
+                selectinload(Ticket.tags),
+                selectinload(Ticket.updates).selectinload(TicketUpdate.attachments),
+                selectinload(Ticket.attachments),
+            )
+            .order_by(Ticket.id)
+            .all()
+        )
+
+        tickets_payload: List[Dict[str, Any]] = []
+        for ticket in ticket_query:
+            ticket_data: Dict[str, Any] = {
+                "title": ticket.title,
+                "description": ticket.description,
+                "priority": ticket.priority,
+                "status": ticket.status,
+            }
+
+            optional_fields = {
+                "requester": ticket.requester,
+                "notes": ticket.notes,
+                "links": (
+                    [part.strip() for part in (ticket.links or "").splitlines() if part.strip()]
+                    if ticket.links
+                    else None
+                ),
+                "on_hold_reason": ticket.on_hold_reason,
+                "due_date": _format_datetime(ticket.due_date),
+                "created_at": _format_datetime(ticket.created_at),
+                "updated_at": _format_datetime(ticket.updated_at),
+                "age_reference_date": _format_date(ticket.age_reference_date),
+            }
+
+            for key, value in optional_fields.items():
+                if value:
+                    ticket_data[key] = value
+
+            watchers = ticket.watchers
+            if watchers:
+                ticket_data["watchers"] = watchers
+
+            tag_names = sorted({tag.name for tag in ticket.tags})
+            if tag_names:
+                ticket_data["tags"] = tag_names
+
+            updates_payload: List[Dict[str, Any]] = []
+            for update in ticket.updates:
+                update_data: Dict[str, Any] = {
+                    "body": update.body,
+                }
+                update_optional = {
+                    "author": update.author,
+                    "created_at": _format_datetime(update.created_at),
+                    "status_from": update.status_from,
+                    "status_to": update.status_to,
+                }
+                for key, value in update_optional.items():
+                    if value:
+                        update_data[key] = value
+                if update.is_system:
+                    update_data["is_system"] = True
+
+                update_attachments = [
+                    _serialize_attachment(att)
+                    for att in sorted(update.attachments, key=lambda item: item.id or 0)
+                ]
+                if update_attachments:
+                    update_data["attachments"] = update_attachments
+                updates_payload.append(update_data)
+
+            if updates_payload:
+                ticket_data["updates"] = updates_payload
+
+            ticket_level_attachments = [
+                _serialize_attachment(attachment)
+                for attachment in sorted(ticket.attachments, key=lambda item: item.id or 0)
+                if attachment.update_id is None
+            ]
+            if ticket_level_attachments:
+                ticket_data["attachments"] = ticket_level_attachments
+
+            tickets_payload.append(ticket_data)
+
+        tags_payload = []
+        for tag in Tag.query.order_by(Tag.name).all():
+            entry: Dict[str, Any] = {"name": tag.name}
+            if tag.color:
+                entry["color"] = tag.color
+            tags_payload.append(entry)
+
+        payload = {
+            "metadata": metadata,
+            "tags": tags_payload,
+            "tickets": tickets_payload,
+        }
+
+        dataset_path.parent.mkdir(parents=True, exist_ok=True)
+        dataset_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+        self._last_loaded = timestamp
+        self.state.last_loaded_at = timestamp.isoformat()
+        self.state.save(self.snapshot_root)
+        return dataset_path
 
     def refresh(self) -> None:
         """Reload the demo dataset, discarding any interim demo changes."""

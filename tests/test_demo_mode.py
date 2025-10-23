@@ -14,7 +14,7 @@ if str(ROOT) not in sys.path:
 
 from tickettracker.app import create_app
 from tickettracker.config import DEFAULT_CONFIG
-from tickettracker.demo import get_demo_manager
+from tickettracker.demo import DemoModeError, get_demo_manager
 from tickettracker.extensions import db
 from tickettracker.models import Ticket
 
@@ -135,6 +135,80 @@ def test_settings_toggle_demo_mode_route(app_with_storage):
     persisted = json.loads(config_path.read_text())
     assert persisted["demo_mode"] is False
 
+
+def test_persist_action_requires_active_demo_mode(app_with_storage):
+    app, _, _ = app_with_storage
+
+    client = app.test_client()
+
+    with app.app_context():
+        manager = get_demo_manager(current_app)
+        dataset_path = manager.dataset_path
+        original_content = dataset_path.read_text(encoding="utf-8")
+
+    response = client.post(
+        "/settings/demo-mode", data={"action": "persist"}, follow_redirects=True
+    )
+    assert response.status_code == 200
+    html = response.data.decode("utf-8")
+    assert "Enable demo mode" in html
+
+    with app.app_context():
+        manager = get_demo_manager(current_app)
+        assert manager.is_active is False
+        assert dataset_path.read_text(encoding="utf-8") == original_content
+
+
+def test_persist_action_updates_dataset_file(app_with_storage):
+    app, _, _ = app_with_storage
+
+    client = app.test_client()
+
+    enable_response = client.post(
+        "/settings/demo-mode", data={"action": "enable"}, follow_redirects=True
+    )
+    assert enable_response.status_code == 200
+
+    with app.app_context():
+        manager = get_demo_manager(current_app)
+        dataset_path = manager.dataset_path
+        original_payload = dataset_path.read_text(encoding="utf-8")
+        original_metadata = json.loads(original_payload)["metadata"]["generated_at"]
+
+        new_title = "Persisted dataset ticket"
+        ticket = Ticket(
+            title=new_title,
+            description="Ticket added before persisting dataset.",
+            priority="Low",
+            status="Open",
+        )
+        db.session.add(ticket)
+        db.session.commit()
+
+    try:
+        persist_response = client.post(
+            "/settings/demo-mode", data={"action": "persist"}, follow_redirects=True
+        )
+        assert persist_response.status_code == 200
+        body = persist_response.data.decode("utf-8")
+        assert "Demo dataset saved" in body
+
+        with app.app_context():
+            manager = get_demo_manager(current_app)
+            assert manager.is_active is True
+            assert current_app.config["APP_CONFIG"].demo_mode is True
+
+            updated_payload = json.loads(dataset_path.read_text(encoding="utf-8"))
+            titles = [item["title"] for item in updated_payload["tickets"]]
+            assert new_title in titles
+            assert updated_payload["metadata"]["generated_at"] != original_metadata
+    finally:
+        with app.app_context():
+            dataset_path.write_text(original_payload, encoding="utf-8")
+            try:
+                get_demo_manager(current_app).disable()
+            except DemoModeError:
+                pass
 
 def test_priority_sorting_uses_configured_order(app_with_storage):
     app, _, _ = app_with_storage
