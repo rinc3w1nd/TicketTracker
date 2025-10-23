@@ -29,6 +29,41 @@ from ..summary import build_ticket_clipboard_summary
 
 tickets_bp = Blueprint("tickets", __name__)
 
+
+@tickets_bp.app_context_processor
+def inject_ticket_helpers() -> Dict[str, object]:
+    """Expose helper utilities used by ticket templates."""
+
+    def tag_filter_url(tag_name: str, compact_value: str) -> str:
+        """Return a ticket list URL that adds the provided tag filter.
+
+        The generated link preserves any existing query arguments so repeated
+        clicks continue stacking filters (e.g. status, search terms, other
+        tags). When no tag filter exists yet the helper ensures ``tag_mode``
+        defaults to ``"any"`` so additional tags broaden the search rather
+        than narrowing it unexpectedly.
+        """
+
+        query_args: Dict[str, List[str]] = {
+            key: list(values) for key, values in request.args.lists()
+        }
+        tags = query_args.setdefault("tag", [])
+        if tag_name not in tags:
+            tags.append(tag_name)
+
+        tag_mode = request.args.get("tag_mode") or "any"
+        query_args["tag_mode"] = [tag_mode]
+        query_args["compact"] = [compact_value]
+
+        flattened: Dict[str, object] = {
+            key: value if len(value) != 1 else value[0]
+            for key, value in query_args.items()
+        }
+        return url_for("tickets.list_tickets", **flattened)
+
+    return {"tag_filter_url": tag_filter_url}
+
+
 BASE_TINT_INTENSITY = 0.5
 # Overdue requests ask for a stronger overlay but remain capped inside the tint helper.
 OVERDUE_TINT_INTENSITY = 0.75
