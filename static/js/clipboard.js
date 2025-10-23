@@ -9,6 +9,77 @@ if (buttons.length) {
   const canWriteText =
     navigator.clipboard && typeof navigator.clipboard.writeText === 'function';
 
+  const createStatusState = () => ({
+    advanced: {
+      supported: canWriteAdvanced,
+      attempted: false,
+      success: false,
+      error: false,
+    },
+    text: {
+      supported: canWriteText,
+      attempted: false,
+      success: false,
+      error: false,
+    },
+    legacy: {
+      attempted: false,
+      success: false,
+    },
+    fallbackShown: false,
+  });
+
+  const describeDebugDetail = (state) => {
+    if (state.advanced.success) {
+      return 'HTML+Text';
+    }
+    if (state.text.success) {
+      return state.advanced.attempted
+        ? 'Text only (HTML failed)'
+        : 'Text only (HTML unsupported)';
+    }
+    if (state.legacy.success) {
+      if (state.text.attempted && !state.text.success) {
+        return 'Legacy copy (writeText failed)';
+      }
+      if (state.advanced.attempted && !state.advanced.success) {
+        return 'Legacy copy (HTML unavailable)';
+      }
+      return 'Legacy copy';
+    }
+    if (state.fallbackShown) {
+      if (!state.advanced.supported && !state.text.supported) {
+        return 'Manual copy (no clipboard API support)';
+      }
+      if (state.advanced.attempted && state.advanced.error) {
+        return 'Manual copy (HTML failed)';
+      }
+      if (state.text.attempted && state.text.error) {
+        return 'Manual copy (clipboard denied)';
+      }
+      return 'Manual copy required';
+    }
+    if (
+      state.advanced.attempted ||
+      state.text.attempted ||
+      state.legacy.attempted
+    ) {
+      return 'No copy method succeeded';
+    }
+    return '';
+  };
+
+  const messageWithDebug = (baseMessage, state, debugEnabled) => {
+    if (!debugEnabled) {
+      return baseMessage;
+    }
+    const detail = describeDebugDetail(state);
+    if (!detail) {
+      return baseMessage;
+    }
+    return `${baseMessage} ${detail}`;
+  };
+
   const clearStatusLater = (button, statusEl) => {
     const existing = resetTimers.get(button);
     if (existing) {
@@ -104,6 +175,9 @@ if (buttons.length) {
         return;
       }
 
+      const debugEnabled = container.dataset.clipboardDebug === 'true';
+      const statusState = createStatusState();
+
       const statusEl = container.querySelector('[data-clipboard-status]');
       const fallbackEl = container.querySelector('[data-clipboard-fallback]');
       const htmlTemplate = container.querySelector('[data-clipboard-html]');
@@ -126,43 +200,78 @@ if (buttons.length) {
 
       try {
         if (canWriteAdvanced) {
+          statusState.advanced.attempted = true;
           await copyAdvanced(htmlContent, fallbackText);
+          statusState.advanced.success = true;
           hideFallback(fallbackEl);
-          setStatus(button, statusEl, 'Summary copied.', 'success');
+          setStatus(
+            button,
+            statusEl,
+            messageWithDebug('Summary copied.', statusState, debugEnabled),
+            'success',
+          );
           return;
         }
       } catch (error) {
         console.warn('Advanced clipboard copy failed', error);
+        statusState.advanced.error = true;
       }
 
       if (canWriteText && fallbackText) {
         try {
+          statusState.text.attempted = true;
           await navigator.clipboard.writeText(fallbackText);
+          statusState.text.success = true;
           hideFallback(fallbackEl);
-          setStatus(button, statusEl, 'Summary copied.', 'success');
+          setStatus(
+            button,
+            statusEl,
+            messageWithDebug('Summary copied.', statusState, debugEnabled),
+            'success',
+          );
           return;
         } catch (error) {
           console.warn('Clipboard writeText failed', error);
+          statusState.text.error = true;
         }
       }
 
-      if (legacyCopy(fallbackText)) {
+      statusState.legacy.attempted = true;
+      const legacySuccess = legacyCopy(fallbackText);
+      statusState.legacy.success = legacySuccess;
+      if (legacySuccess) {
         hideFallback(fallbackEl);
-        setStatus(button, statusEl, 'Summary copied.', 'success');
-        return;
-      }
-
-      if (showFallback(fallbackEl, fallbackText)) {
         setStatus(
           button,
           statusEl,
-          'Clipboard unavailable. Text selected below.',
+          messageWithDebug('Summary copied.', statusState, debugEnabled),
+          'success',
+        );
+        return;
+      }
+
+      const fallbackShown = showFallback(fallbackEl, fallbackText);
+      statusState.fallbackShown = fallbackShown;
+      if (fallbackShown) {
+        setStatus(
+          button,
+          statusEl,
+          messageWithDebug(
+            'Clipboard unavailable. Text selected below.',
+            statusState,
+            debugEnabled,
+          ),
           'warning',
         );
         return;
       }
 
-      setStatus(button, statusEl, 'Clipboard unavailable.', 'error');
+      setStatus(
+        button,
+        statusEl,
+        messageWithDebug('Clipboard unavailable.', statusState, debugEnabled),
+        'error',
+      );
     });
   });
 }

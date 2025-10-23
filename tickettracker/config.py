@@ -52,6 +52,8 @@ DEFAULT_CLIPBOARD_SUMMARY: Dict[str, Any] = {
     "html_sections": list(DEFAULT_CLIPBOARD_SUMMARY_SECTIONS),
     "text_sections": list(DEFAULT_CLIPBOARD_SUMMARY_SECTIONS),
     "updates_limit": 1,
+    "debug_status": False,
+    "inline_styles": False,
 }
 
 
@@ -204,6 +206,8 @@ class ClipboardSummaryConfig:
     html_sections: List[str] = field(default_factory=list)
     text_sections: List[str] = field(default_factory=list)
     updates_limit: int = DEFAULT_CLIPBOARD_SUMMARY["updates_limit"]
+    debug_status: bool = False
+    inline_styles: bool = False
 
     def sections_for_html(self) -> List[str]:
         sections = list(self.html_sections)
@@ -246,6 +250,8 @@ class ClipboardSummaryConfig:
             "html_sections": self.sections_for_html(),
             "text_sections": self.sections_for_text(),
             "updates_limit": int(self.updates_limit),
+            "debug_status": bool(self.debug_status),
+            "inline_styles": bool(self.inline_styles),
         }
 
 
@@ -550,6 +556,15 @@ def load_config(config_path: Optional[os.PathLike[str] | str] = None) -> AppConf
     if updates_limit is None:
         updates_limit = int(DEFAULT_CLIPBOARD_SUMMARY["updates_limit"])
 
+    debug_status = _coerce_bool(
+        clipboard_summary_config.get("debug_status"),
+        default=bool(DEFAULT_CLIPBOARD_SUMMARY.get("debug_status", False)),
+    )
+    inline_styles = _coerce_bool(
+        clipboard_summary_config.get("inline_styles"),
+        default=bool(DEFAULT_CLIPBOARD_SUMMARY.get("inline_styles", False)),
+    )
+
     resolved_html_sections = (
         html_sections if html_sections else list(DEFAULT_CLIPBOARD_SUMMARY["html_sections"])
     )
@@ -563,6 +578,8 @@ def load_config(config_path: Optional[os.PathLike[str] | str] = None) -> AppConf
         html_sections=resolved_html_sections,
         text_sections=resolved_text_sections,
         updates_limit=updates_limit,
+        debug_status=debug_status,
+        inline_styles=inline_styles,
     )
 
     demo_mode = _coerce_bool(merged.get("demo_mode"), default=False)

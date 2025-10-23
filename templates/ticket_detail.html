@@ -6,6 +6,7 @@
 <article
   class="ticket-detail ticket-surface{% if ticket.is_overdue %} is-overdue{% endif %}"
   data-clipboard-container
+  data-clipboard-debug="{{ 'true' if config.clipboard_summary.debug_status else 'false' }}"
   data-overdue="{{ 'true' if ticket.is_overdue else 'false' }}"
   style="--ticket-accent: {{ ticket.display_color }}; --ticket-tint: {{ ticket.tint_color }}; --ticket-title-color: {{ ticket_title_color|default('#f8fafc') }};"
 >
