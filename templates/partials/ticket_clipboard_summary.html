@@ -237,20 +237,43 @@
     border: 1px solid rgba(148, 163, 184, 0.35);
   }
 
-  .ticket-clipboard-summary .status-badge {
-    background: var(--ticket-status-color, rgba(148, 163, 184, 0.28));
-    color: #f8fafc;
-  }
-
-  .ticket-clipboard-summary .priority-badge {
-    background: var(--ticket-priority-color, rgba(148, 163, 184, 0.25));
-    color: #0f172a;
-    box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.35), 0 8px 16px rgba(2, 6, 23, 0.35);
-  }
-
+  /* Elegant status / priority / due styling */
+  .ticket-clipboard-summary .status-badge,
+  .ticket-clipboard-summary .priority-badge,
   .ticket-clipboard-summary .due-badge {
-    background: var(--ticket-due-color, rgba(56, 189, 248, 0.35));
-    color: #f8fafc;
+    background: none;
+    border: none;
+    box-shadow: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    letter-spacing: 0.02em;
+    padding: 0;
+  }
+  
+  /* Color each value text, not its background */
+  .ticket-clipboard-summary .status-badge {
+    color: var(--ticket-status-color, #64748b);  /* slate-ish neutral */
+  }
+  
+  .ticket-clipboard-summary .priority-badge {
+    color: var(--ticket-priority-color, #3b82f6); /* blue accent */
+  }
+  
+  .ticket-clipboard-summary .due-badge {
+    color: var(--ticket-due-color, #38bdf8); /* softer cyan */
+  }
+  
+  /* Optional subtle underline for focus */
+  .ticket-clipboard-summary .status-badge::after,
+  .ticket-clipboard-summary .priority-badge::after,
+  .ticket-clipboard-summary .due-badge::after {
+    content: "";
+    display: inline-block;
+    width: 100%;
+    height: 1px;
+    background-color: currentColor;
+    opacity: 0.2;
+    transform: translateY(2px);
   }
 
   .ticket-clipboard-summary .sla-badge {
@@ -418,7 +441,7 @@
           <tr>
             <th{% if th_style %} style="{{ th_style }}"{% endif %}>Status</th>
             <td{% if td_style %} style="{{ td_style }}"{% endif %}>
-              <span class="badge status-badge"{% if status_badge_style %} style="{{ status_badge_style }}"{% endif %}>{{ ticket.status }}</span>
+              <span class="status-badge">{{ ticket.status }}</span>
               {% if ticket.status == 'On Hold' and ticket.on_hold_reason %}
                 {% set hold_prefix = '• ' if use_inline_styles else '' %}
                 <span class="status-note"{% if status_note_style %} style="{{ status_note_style }}"{% endif %}>{{ hold_prefix }}{{ ticket.on_hold_reason }}</span>
@@ -428,13 +451,13 @@
           <tr>
             <th{% if th_style %} style="{{ th_style }}"{% endif %}>Priority</th>
             <td{% if td_style %} style="{{ td_style }}"{% endif %}>
-              <span class="badge priority-badge"{% if priority_badge_style %} style="{{ priority_badge_style }}"{% endif %}>{{ ticket.priority }}</span>
+              <span class="priority-badge">{{ ticket.priority }}</span> 
             </td>
           </tr>
           <tr>
             <th{% if th_style %} style="{{ th_style }}"{% endif %}>Due</th>
             <td{% if td_style %} style="{{ td_style }}"{% endif %}>
-              <span class="badge due-badge"{% if due_badge_style_value %} style="{{ due_badge_style_value }}"{% endif %}>{{ ticket.due_badge_label }}</span>
+              <span class="due-badge">{{ ticket.due_badge_label }}</span>
               {% if not ticket.due_date and ticket.age_reference_date %}
                 <span class="age-badge"{% if inline_hint_style %} style="{{ inline_hint_style }}"{% endif %}>Aging since {{ ticket.age_reference_date.strftime('%b %d, %Y') }}</span>
               {% endif %}
