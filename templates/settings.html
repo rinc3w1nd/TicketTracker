@@ -28,37 +28,39 @@
         />
       </div>
 
-      <div class="field-group">
-        <label for="priorities">Priorities</label>
-        <textarea
-          id="priorities"
-          name="priorities"
-          rows="4"
-          required
-        >{{- form.priorities|default('') -}}</textarea>
-        <p class="help">Enter one priority per line, ordered from lowest to highest.</p>
-      </div>
+      <div class="field-row field-row--thirds">
+        <div class="field-group">
+          <label for="priorities">Priorities</label>
+          <textarea
+            id="priorities"
+            name="priorities"
+            rows="4"
+            required
+          >{{- form.priorities|default('') -}}</textarea>
+          <p class="help">Enter one priority per line, ordered from lowest to highest.</p>
+        </div>
 
-      <div class="field-group">
-        <label for="hold_reasons">Hold reasons</label>
-        <textarea
-          id="hold_reasons"
-          name="hold_reasons"
-          rows="4"
-          required
-        >{{- form.hold_reasons|default('') -}}</textarea>
-        <p class="help">Use one reason per line to populate the on-hold dropdown.</p>
-      </div>
+        <div class="field-group">
+          <label for="hold_reasons">Hold reasons</label>
+          <textarea
+            id="hold_reasons"
+            name="hold_reasons"
+            rows="4"
+            required
+          >{{- form.hold_reasons|default('') -}}</textarea>
+          <p class="help">Use one reason per line to populate the on-hold dropdown.</p>
+        </div>
 
-      <div class="field-group">
-        <label for="workflow">Workflow statuses</label>
-        <textarea
-          id="workflow"
-          name="workflow"
-          rows="4"
-          required
-        >{{- form.workflow|default('') -}}</textarea>
-        <p class="help">List statuses in the order they should appear in dropdowns.</p>
+        <div class="field-group">
+          <label for="workflow">Workflow statuses</label>
+          <textarea
+            id="workflow"
+            name="workflow"
+            rows="4"
+            required
+          >{{- form.workflow|default('') -}}</textarea>
+          <p class="help">List statuses in the order they should appear in dropdowns.</p>
+        </div>
       </div>
 
       <fieldset class="field-group sla-settings">

@@ -925,6 +925,28 @@ body.compact .filter-fields .filter-actions {
   }
 }
 
+.field-row {
+  display: grid;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.field-row--thirds {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 768px) {
+  .field-row--thirds {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1100px) {
+  .field-row--thirds {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 .field-group {
   display: flex;
   flex-direction: column;
@@ -941,6 +963,7 @@ body.compact .filter-fields .filter-actions {
 .field-group input,
 .field-group textarea,
 .field-group select {
+  width: 100%;
   background: rgba(15, 23, 42, 0.6);
   border: 1px solid rgba(148, 163, 184, 0.2);
   border-radius: 0.75rem;
