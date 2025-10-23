@@ -172,7 +172,15 @@
       <h3>Tags</h3>
       <ul class="tags">
         {% for tag in ticket.tags %}
-          <li style="--tag-color: {{ tag.color or config.colors.tags.background }}; --tag-text: {{ config.colors.tags.text }}">{{ tag.name }}</li>
+          <li style="--tag-color: {{ tag.color or config.colors.tags.background }}; --tag-text: {{ config.colors.tags.text }}">
+            <a
+              class="tag-link"
+              href="{{ tag_filter_url(tag.name, compact_value) }}"
+              title="Filter by tag {{ tag.name }}"
+            >
+              {{ tag.name }}
+            </a>
+          </li>
         {% endfor %}
       </ul>
     </section>
