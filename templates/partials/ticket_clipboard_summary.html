@@ -17,7 +17,10 @@
 {% set article_shadow = '0 24px 45px rgba(15, 23, 42, 0.12)' %}
 {% set timeline_surface = 'rgba(255, 255, 255, 0.92)' %}
 {% set timeline_border = 'rgba(148, 163, 184, 0.28)' %}
-{% set article_background = "linear-gradient(120deg, " ~ tint_color ~ " 0%, rgba(248, 250, 252, 0) 70%), linear-gradient(160deg, rgba(248, 250, 252, 0.98) 0%, rgba(241, 245, 249, 0.96) 55%, rgba(226, 232, 240, 0.94) 100%)" %}
+{% set article_background =
+  "linear-gradient(120deg, " ~ tint_color ~ " 0%, rgba(248, 250, 252, 0) 70%), " ~
+  "linear-gradient(160deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.96) 55%, rgba(3, 6, 18, 0.94) 100%)"
+%}
 {% set tag_text_color = config.colors.tags.get('text', '#e2e8f0') %}
 {% set raw_summary_id = ticket.id if ticket.id is not none else 'preview' %}
 {% set summary_identifier = ('ticket-' ~ raw_summary_id)|replace(' ', '-')|replace('"', '')|replace("'", '') %}
@@ -104,15 +107,17 @@
 <style>
   .ticket-clipboard-summary {
     font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-    background: linear-gradient(
-      120deg, 
-      var(--ticket-tint, rgba(56, 189, 248, 0.25)) 0%, 
-      rgba(248, 250, 252, 0) 70%), 
+    background:
       linear-gradient(
-        160deg, 
-        rgba(248, 250, 252, 0.98) 0%, 
-        rgba(241, 245, 249, 0.96) 55%, 
-        rgba(226, 232, 240, 0.94) 100%
+        120deg,
+        var(--ticket-tint, rgba(56,189,248,0.25)) 0%,
+        rgba(248,250,252,0) 70%
+      ),
+      linear-gradient(
+        160deg,
+        rgba(30,41,59,0.98) 0%,
+        rgba(15,23,42,0.96) 55%,
+        rgba(3,6,18,0.94) 100%
       );
     color: var(--clipboard-text, #0f172a);
     border-radius: 1.75rem;
