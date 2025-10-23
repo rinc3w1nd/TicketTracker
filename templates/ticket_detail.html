@@ -201,11 +201,34 @@
       <h3>Attachments</h3>
       <ul>
         {% for attachment in ticket.attachments %}
-          <li>
-            <a href="{{ url_for('tickets.download_attachment', attachment_id=attachment.id, compact=compact_value) }}">
-              {{ attachment.display_name }}
-            </a>
-            <span class="attachment-meta">Uploaded {{ attachment.uploaded_at.strftime('%b %d, %Y %H:%M') }}</span>
+          <li class="attachment-item">
+            <div class="attachment-main">
+              <a href="{{ url_for('tickets.download_attachment', attachment_id=attachment.id, compact=compact_value) }}">
+                {{ attachment.display_name }}
+              </a>
+              <span class="attachment-meta">Uploaded {{ attachment.uploaded_at.strftime('%b %d, %Y %H:%M') }}</span>
+            </div>
+            <form
+              method="post"
+              action="{{ url_for('tickets.delete_attachment', attachment_id=attachment.id, compact=compact_value) }}"
+              class="attachment-delete-form"
+            >
+              <button type="submit" class="attachment-delete-button icon-button">
+                <span class="icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                    <path
+                      d="M6 7h12M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2m-8 0v12a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V7"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    ></path>
+                  </svg>
+                </span>
+                <span class="sr-only">Delete attachment {{ attachment.display_name }}</span>
+              </button>
+            </form>
           </li>
         {% endfor %}
       </ul>
@@ -233,10 +256,33 @@
             {% if update.attachments %}
               <ul class="update-attachments">
                 {% for attachment in update.attachments %}
-                  <li>
-                    <a href="{{ url_for('tickets.download_attachment', attachment_id=attachment.id, compact=compact_value) }}">
-                      {{ attachment.display_name }}
-                    </a>
+                  <li class="attachment-item">
+                    <div class="attachment-main">
+                      <a href="{{ url_for('tickets.download_attachment', attachment_id=attachment.id, compact=compact_value) }}">
+                        {{ attachment.display_name }}
+                      </a>
+                    </div>
+                    <form
+                      method="post"
+                      action="{{ url_for('tickets.delete_attachment', attachment_id=attachment.id, compact=compact_value) }}"
+                      class="attachment-delete-form"
+                    >
+                      <button type="submit" class="attachment-delete-button icon-button">
+                        <span class="icon" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                            <path
+                              d="M6 7h12M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2m-8 0v12a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V7"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="1.7"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            ></path>
+                          </svg>
+                        </span>
+                        <span class="sr-only">Delete attachment {{ attachment.display_name }}</span>
+                      </button>
+                    </form>
                   </li>
                 {% endfor %}
               </ul>
