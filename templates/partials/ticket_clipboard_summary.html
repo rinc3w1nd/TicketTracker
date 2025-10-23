@@ -1,20 +1,25 @@
 <article class="ticket-clipboard-summary">
-  {% if 'header' in sections %}
+  {% from "partials/_clipboard_summary_macros.html" import with_section, format_timestamp %}
+
+  {% call with_section('header', sections) %}
     <header>
-      <h1>Ticket #{{ ticket.id }} · {{ ticket.title }}</h1>
+      <h1>{{ ticket.title }}</h1>
+    </header>
+  {% endcall %}
+
+  {% call with_section('timestamps', sections) %}
+    <section>
+      <h2>Timeline</h2>
       <p>
         <strong>Created:</strong>
-        {{ ticket.created_at.strftime('%b %d, %Y %H:%M') if ticket.created_at else '—' }}<br />
+        {{ format_timestamp(ticket.created_at) }}<br />
         <strong>Updated:</strong>
-        {{ ticket.updated_at.strftime('%b %d, %Y %H:%M') if ticket.updated_at else '—' }}
+        {{ format_timestamp(ticket.updated_at) }}
       </p>
-      {% if ticket_url %}
-        <p><strong>Link:</strong> <a href="{{ ticket_url }}">{{ ticket_url }}</a></p>
-      {% endif %}
-    </header>
-  {% endif %}
+    </section>
+  {% endcall %}
 
-  {% if 'meta' in sections %}
+  {% call with_section('meta', sections) %}
     <section>
       <h2>Details</h2>
       <ul>
@@ -26,75 +31,87 @@
         {% endif %}
       </ul>
     </section>
-  {% endif %}
+  {% endcall %}
 
-  {% if 'people' in sections and (ticket.requester or ticket.watchers) %}
-    <section>
-      <h2>People</h2>
-      <ul>
-        {% if ticket.requester %}
-          <li><strong>Requester:</strong> {{ ticket.requester }}</li>
-        {% endif %}
-        {% if ticket.watchers %}
-          <li><strong>Watchers:</strong> {{ ticket.watchers|join(', ') }}</li>
-        {% endif %}
-      </ul>
-    </section>
-  {% endif %}
+  {% call with_section('people', sections) %}
+    {% if ticket.requester or ticket.watchers %}
+      <section>
+        <h2>People</h2>
+        <ul>
+          {% if ticket.requester %}
+            <li><strong>Requester:</strong> {{ ticket.requester }}</li>
+          {% endif %}
+          {% if ticket.watchers %}
+            <li><strong>Watchers:</strong> {{ ticket.watchers|join(', ') }}</li>
+          {% endif %}
+        </ul>
+      </section>
+    {% endif %}
+  {% endcall %}
 
-  {% if 'description' in sections and ticket.description %}
-    <section>
-      <h2>Description</h2>
-      <p>{{ ticket.description|urlize|replace('\n', '<br />')|safe }}</p>
-    </section>
-  {% endif %}
+  {% call with_section('description', sections) %}
+    {% if ticket.description %}
+      <section>
+        <h2>Description</h2>
+        <p>{{ ticket.description|urlize|replace('\n', '<br />')|safe }}</p>
+      </section>
+    {% endif %}
+  {% endcall %}
 
-  {% if 'links' in sections and ticket.links %}
-    <section>
-      <h2>Links</h2>
-      <p>{{ ticket.links|urlize|replace('\n', '<br />')|safe }}</p>
-    </section>
-  {% endif %}
+  {% call with_section('links', sections) %}
+    {% if ticket.links %}
+      <section>
+        <h2>Links</h2>
+        <p>{{ ticket.links|urlize|replace('\n', '<br />')|safe }}</p>
+      </section>
+    {% endif %}
+  {% endcall %}
 
-  {% if 'notes' in sections and ticket.notes %}
-    <section>
-      <h2>Notes</h2>
-      <p>{{ ticket.notes|urlize|replace('\n', '<br />')|safe }}</p>
-    </section>
-  {% endif %}
+  {% call with_section('notes', sections) %}
+    {% if ticket.notes %}
+      <section>
+        <h2>Notes</h2>
+        <p>{{ ticket.notes|urlize|replace('\n', '<br />')|safe }}</p>
+      </section>
+    {% endif %}
+  {% endcall %}
 
-  {% if 'tags' in sections and ticket.tags %}
-    <section>
-      <h2>Tags</h2>
-      <ul>
-        {% for tag in ticket.tags %}
-          <li>{{ tag.name }}</li>
-        {% endfor %}
-      </ul>
-    </section>
-  {% endif %}
+  {% call with_section('tags', sections) %}
+    {% if ticket.tags %}
+      <section>
+        <h2>Tags</h2>
+        <ul>
+          {% for tag in ticket.tags %}
+            <li>{{ tag.name }}</li>
+          {% endfor %}
+        </ul>
+      </section>
+    {% endif %}
+  {% endcall %}
 
-  {% if 'updates' in sections and updates %}
-    <section>
-      <h2>Recent Updates</h2>
-      <ol>
-        {% for update in updates %}
-          <li>
-            <p>
-              <strong>{{ update.created_at.strftime('%b %d, %Y %H:%M') }}</strong>
-              by
-              {{ 'System' if update.is_system else (update.author or config.default_submitted_by) }}
-            </p>
-            {% if update.status_from or update.status_to %}
+  {% call with_section('updates', sections) %}
+    {% if updates %}
+      <section>
+        <h2>Recent Updates</h2>
+        <ol>
+          {% for update in updates %}
+            <li>
               <p>
-                <strong>Status:</strong>
-                {{ update.status_from or '—' }} → {{ update.status_to or '—' }}
+                <strong>{{ format_timestamp(update.created_at) }}</strong>
+                by
+                {{ 'System' if update.is_system else (update.author or config.default_submitted_by) }}
               </p>
-            {% endif %}
-            <p>{{ update.body|urlize|replace('\n', '<br />')|safe }}</p>
-          </li>
-        {% endfor %}
-      </ol>
-    </section>
-  {% endif %}
+              {% if update.status_from or update.status_to %}
+                <p>
+                  <strong>Status:</strong>
+                  {{ update.status_from or '—' }} → {{ update.status_to or '—' }}
+                </p>
+              {% endif %}
+              <p>{{ update.body|urlize|replace('\n', '<br />')|safe }}</p>
+            </li>
+          {% endfor %}
+        </ol>
+      </section>
+    {% endif %}
+  {% endcall %}
 </article>

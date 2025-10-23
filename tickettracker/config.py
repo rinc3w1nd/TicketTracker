@@ -39,6 +39,7 @@ DEFAULT_BACKLOG_DUE_DAYS = 21
 
 DEFAULT_CLIPBOARD_SUMMARY_SECTIONS: List[str] = [
     "header",
+    "timestamps",
     "meta",
     "people",
     "description",
@@ -205,13 +206,15 @@ class ClipboardSummaryConfig:
     updates_limit: int = DEFAULT_CLIPBOARD_SUMMARY["updates_limit"]
 
     def sections_for_html(self) -> List[str]:
-        if self.html_sections:
-            return list(self.html_sections)
+        sections = list(self.html_sections)
+        if sections:
+            return sections
         return list(DEFAULT_CLIPBOARD_SUMMARY["html_sections"])
 
     def sections_for_text(self) -> List[str]:
-        if self.text_sections:
-            return list(self.text_sections)
+        sections = list(self.text_sections)
+        if sections:
+            return sections
         if self.html_sections:
             return list(self.html_sections)
         return list(DEFAULT_CLIPBOARD_SUMMARY["text_sections"])
@@ -219,12 +222,29 @@ class ClipboardSummaryConfig:
     def max_updates(self) -> int:
         return max(0, int(self.updates_limit))
 
+    def available_sections(self) -> List[str]:
+        """Return a unique list of known clipboard sections."""
+
+        seen: set[str] = set()
+        ordered: List[str] = []
+        for value in [
+            *DEFAULT_CLIPBOARD_SUMMARY_SECTIONS,
+            *self.html_sections,
+            *self.text_sections,
+        ]:
+            key = str(value or "").strip().lower()
+            if not key or key in seen:
+                continue
+            ordered.append(key)
+            seen.add(key)
+        return ordered
+
     def to_dict(self) -> Dict[str, Any]:
         """Return a JSON-serializable representation of clipboard options."""
 
         return {
-            "html_sections": list(self.html_sections),
-            "text_sections": list(self.text_sections),
+            "html_sections": self.sections_for_html(),
+            "text_sections": self.sections_for_text(),
             "updates_limit": int(self.updates_limit),
         }
 

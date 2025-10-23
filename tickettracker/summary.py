@@ -3,12 +3,25 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Iterable, List, Sequence
+from typing import Dict, Iterable, List, Sequence
 
-from flask import render_template, url_for
+from flask import render_template
 
 from .config import AppConfig
 from .models import Ticket, TicketUpdate
+
+
+CLIPBOARD_SUMMARY_SECTION_DESCRIPTIONS: Dict[str, str] = {
+    "header": "Displays the ticket title as a heading.",
+    "timestamps": "Shows the created and last updated timestamps.",
+    "meta": "Lists status, priority, due date, and SLA countdown.",
+    "people": "Summarises the requester and watchers.",
+    "description": "Includes the ticket description body.",
+    "links": "Copies the ticket's reference links field.",
+    "notes": "Copies the internal notes field.",
+    "tags": "Lists applied tags.",
+    "updates": "Shows recent timeline updates with authors and changes.",
+}
 
 
 @dataclass
@@ -62,10 +75,7 @@ def build_ticket_clipboard_summary(
     updates_limit = summary_config.max_updates()
     updates = _recent_updates(ticket, updates_limit)
 
-    try:
-        ticket_url = url_for("tickets.ticket_detail", ticket_id=ticket.id, _external=True)
-    except RuntimeError:
-        ticket_url = None
+    available_sections = summary_config.available_sections()
 
     html = render_template(
         "partials/ticket_clipboard_summary.html",
@@ -73,7 +83,7 @@ def build_ticket_clipboard_summary(
         config=config,
         sections=resolved_html_sections,
         updates=updates,
-        ticket_url=ticket_url,
+        available_sections=available_sections,
     ).strip()
 
     text = render_template(
@@ -82,7 +92,7 @@ def build_ticket_clipboard_summary(
         config=config,
         sections=resolved_text_sections,
         updates=updates,
-        ticket_url=ticket_url,
+        available_sections=available_sections,
     ).strip()
 
     return TicketClipboardSummary(html=html, text=text)

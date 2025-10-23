@@ -68,7 +68,15 @@
           name="html_sections"
           rows="4"
         >{{- form.html_sections|default('') -}}</textarea>
-        <p class="help">Customize the sections used when generating HTML clipboard summaries.</p>
+        <p class="help">
+          List clipboard section names one per line to control HTML clipboard exports.
+          Available sections:
+        </p>
+        <ul class="help-list">
+          {% for section, description in clipboard_sections.items() %}
+            <li><code>{{ section }}</code> — {{ description }}</li>
+          {% endfor %}
+        </ul>
       </div>
 
       <div class="field-group">
@@ -78,7 +86,10 @@
           name="text_sections"
           rows="4"
         >{{- form.text_sections|default('') -}}</textarea>
-        <p class="help">Leave blank to reuse the HTML section list for plain text summaries.</p>
+        <p class="help">
+          Leave blank to reuse the HTML section list for plain text summaries. Include
+          <code>timestamps</code> to copy created/updated times or remove it to omit them.
+        </p>
       </div>
 
       <div class="field-group">

@@ -35,6 +35,8 @@ def test_load_config_records_source_path(tmp_path):
     payload = config.to_json_dict()
     assert payload["demo_mode"] is False
     assert payload["database"]["uri"].endswith("/:memory:")
+    assert payload["clipboard_summary"]["html_sections"][1] == "timestamps"
+    assert payload["clipboard_summary"]["text_sections"][1] == "timestamps"
 
 
 def test_settings_update_persists_between_app_starts(tmp_path):
@@ -55,8 +57,8 @@ def test_settings_update_persists_between_app_starts(tmp_path):
             "priorities": "Low\nMedium\nHigh\nUrgent",
             "hold_reasons": "Awaiting info\nReview pending",
             "workflow": "New\nActive\nDone",
-            "html_sections": "header\nsummary",
-            "text_sections": "header\nsummary\nnotes",
+            "html_sections": "header\ntimestamps\nsummary",
+            "text_sections": "header\ntimestamps\nsummary\nnotes",
             "updates_limit": "3",
             "demo_mode": "on",
         },
@@ -70,9 +72,14 @@ def test_settings_update_persists_between_app_starts(tmp_path):
     assert persisted["priorities"] == ["Low", "Medium", "High", "Urgent"]
     assert persisted["hold_reasons"] == ["Awaiting info", "Review pending"]
     assert persisted["workflow"] == ["New", "Active", "Done"]
-    assert persisted["clipboard_summary"]["html_sections"] == ["header", "summary"]
+    assert persisted["clipboard_summary"]["html_sections"] == [
+        "header",
+        "timestamps",
+        "summary",
+    ]
     assert persisted["clipboard_summary"]["text_sections"] == [
         "header",
+        "timestamps",
         "summary",
         "notes",
     ]
@@ -93,10 +100,12 @@ def test_settings_update_persists_between_app_starts(tmp_path):
         assert reloaded_config.hold_reasons == ["Awaiting info", "Review pending"]
         assert reloaded_config.clipboard_summary.html_sections == [
             "header",
+            "timestamps",
             "summary",
         ]
         assert reloaded_config.clipboard_summary.text_sections == [
             "header",
+            "timestamps",
             "summary",
             "notes",
         ]

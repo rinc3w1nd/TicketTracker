@@ -1,0 +1,9 @@
+{% macro with_section(name, active_sections) -%}
+  {% if name in active_sections %}
+    {{ caller() }}
+  {% endif %}
+{%- endmacro %}
+
+{% macro format_timestamp(value) -%}
+  {{ value.strftime('%b %d, %Y %H:%M') if value else '—' }}
+{%- endmacro %}
