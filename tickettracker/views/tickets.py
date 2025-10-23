@@ -25,6 +25,7 @@ from ..config import AppConfig
 from ..extensions import db
 from ..models import Attachment, Tag, Ticket, TicketUpdate
 from ..summary import build_ticket_clipboard_summary
+from ..utils.uploads import compute_stream_sha256, generate_uuid7
 
 
 tickets_bp = Blueprint("tickets", __name__)
@@ -389,29 +390,78 @@ def _store_attachments(
 ) -> List[Attachment]:
     stored: List[Attachment] = []
     upload_root = Path(current_app.config["UPLOAD_FOLDER"])
-    ticket_folder = upload_root / str(ticket.id)
-    ticket_folder.mkdir(parents=True, exist_ok=True)
 
     for upload in files:
         if not upload or not upload.filename:
             continue
+
         original_name = upload.filename
         safe_name = secure_filename(original_name) or "attachment"
-        timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S%f")
-        stored_name = f"{timestamp}_{safe_name}"
-        target_path = ticket_folder / stored_name
-        upload.save(target_path)
+
+        checksum = compute_stream_sha256(upload.stream)
+
+        existing = (
+            Attachment.query.filter_by(checksum=checksum)
+            .order_by(Attachment.id.asc())
+            .first()
+        )
+        if existing and not existing.stored_filename:
+            existing = None
+
+        stored_filename: str
+        file_uuid: str
+        file_size: int | None = None
+
+        if existing:
+            file_uuid = existing.file_uuid or generate_uuid7()
+            if not existing.file_uuid:
+                existing.file_uuid = file_uuid
+            if not existing.checksum:
+                existing.checksum = checksum
+            stored_filename = existing.stored_filename
+            target_path = upload_root / stored_filename
+
+            if target_path.exists():
+                file_size = existing.size
+                if file_size is None:
+                    try:
+                        file_size = target_path.stat().st_size
+                    except OSError:
+                        file_size = None
+            else:
+                target_path.parent.mkdir(parents=True, exist_ok=True)
+                upload.save(target_path)
+                try:
+                    file_size = target_path.stat().st_size
+                except OSError:
+                    file_size = existing.size
+        else:
+            file_uuid = generate_uuid7()
+            timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S%f")
+            extension = Path(safe_name).suffix
+            stored_name = f"{file_uuid}-{timestamp}{extension}"
+            stored_filename = f"shared/{stored_name}"
+            target_path = upload_root / stored_filename
+            target_path.parent.mkdir(parents=True, exist_ok=True)
+            upload.save(target_path)
+            try:
+                file_size = target_path.stat().st_size
+            except OSError:
+                file_size = None
 
         attachment = Attachment(
             ticket=ticket,
             update=update,
             original_filename=original_name,
-            stored_filename=f"{ticket.id}/{stored_name}",
+            stored_filename=stored_filename,
             mimetype=upload.mimetype,
-            size=target_path.stat().st_size if target_path.exists() else None,
+            size=file_size,
+            checksum=checksum,
+            file_uuid=file_uuid,
         )
         db.session.add(attachment)
         stored.append(attachment)
+
     return stored
 
 
