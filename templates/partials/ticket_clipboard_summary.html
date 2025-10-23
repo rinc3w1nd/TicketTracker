@@ -1,88 +1,159 @@
-<article class="ticket-clipboard-summary">
-  {% from "partials/_clipboard_summary_macros.html" import with_section, format_timestamp %}
-
+{% from "partials/_clipboard_summary_macros.html" import with_section, format_timestamp %}
+{% set use_inline_styles = config.clipboard_summary.inline_styles %}
+{% set article_style = "font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background-color: #ffffff; border: 1px solid #d1d5db; border-radius: 8px; padding: 16px; color: #0f172a; line-height: 1.5; width: 100%; box-sizing: border-box;" if use_inline_styles else "" %}
+{% set header_style = "margin: 0 0 12px 0; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0;" if use_inline_styles else "" %}
+{% set title_style = "margin: 0; font-size: 20px; line-height: 1.4; color: #111827;" if use_inline_styles else "" %}
+{% set section_style = "margin-top: 16px;" if use_inline_styles else "" %}
+{% set section_heading_style = "margin: 0 0 8px 0; font-size: 13px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #475569;" if use_inline_styles else "" %}
+{% set paragraph_style = "margin: 0; color: #0f172a;" if use_inline_styles else "" %}
+{% set inline_hint_style = "margin-left: 8px; color: #475569; font-weight: 500;" if use_inline_styles else "" %}
+{% set table_style = "width: 100%; border-collapse: collapse; margin: 0;" if use_inline_styles else "" %}
+{% set th_style = "padding: 4px 0; text-align: left; font-weight: 600; color: #1e293b; vertical-align: top; width: 32%;" if use_inline_styles else "" %}
+{% set td_style = "padding: 4px 0; color: #0f172a; vertical-align: top;" if use_inline_styles else "" %}
+{% set badge_style = "display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; line-height: 1.4; color: #ffffff;" if use_inline_styles else "" %}
+{% set due_badge_style = "display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; line-height: 1.4; color: #0f172a;" if use_inline_styles else "" %}
+{% set tag_list_style = "margin: 0; padding: 0; list-style: none;" if use_inline_styles else "" %}
+{% set tag_item_style = "display: inline-block; margin: 0 8px 8px 0;" if use_inline_styles else "" %}
+{% set tag_badge_style = "display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 500;" if use_inline_styles else "" %}
+{% set update_list_style = "margin: 0; padding-left: 18px;" if use_inline_styles else "" %}
+{% set update_item_base_style = "margin: 0; padding: 12px 0;" if use_inline_styles else "" %}
+{% set update_meta_style = "margin: 0 0 4px 0; color: #0f172a; font-weight: 600;" if use_inline_styles else "" %}
+{% set update_meta_detail_style = "margin-left: 8px; color: #475569; font-weight: 500;" if use_inline_styles else "" %}
+{% set update_body_style = "margin: 0 0 4px 0; color: #0f172a;" if use_inline_styles else "" %}
+{% set update_body_last_style = "margin: 0; color: #0f172a;" if use_inline_styles else "" %}
+{% set status_badge_style = badge_style + ' background-color: ' + (ticket.status_color or '#3b82f6') + ';' if badge_style else '' %}
+{% set priority_color = config.colors.priorities.get(ticket.priority, '#3b82f6') %}
+{% set priority_badge_style = badge_style + ' background-color: ' + priority_color + ';' if badge_style else '' %}
+{% set due_color = ticket.due_badge_color or '#e2e8f0' %}
+{% set due_badge_style_value = due_badge_style + ' background-color: ' + due_color + ';' if due_badge_style else '' %}
+{% set tag_text_color = config.colors.tags.get('text', '#f8fafc') %}
+<article class="ticket-clipboard-summary" data-clipboard-summary="ticket"{% if article_style %} style="{{ article_style }}"{% endif %}>
   {% call with_section('header', sections) %}
-    <header>
-      <h1>{{ ticket.title }}</h1>
+    <header data-clipboard-section="header"{% if header_style %} style="{{ header_style }}"{% endif %}>
+      <h1{% if title_style %} style="{{ title_style }}"{% endif %}>{{ ticket.title }}</h1>
     </header>
   {% endcall %}
 
   {% call with_section('timestamps', sections) %}
-    <section>
-      <h2>Timeline</h2>
-      <p>
-        <strong>Created:</strong>
-        {{ format_timestamp(ticket.created_at) }}<br />
-        <strong>Updated:</strong>
-        {{ format_timestamp(ticket.updated_at) }}
-      </p>
+    <section data-clipboard-section="timestamps"{% if section_style %} style="{{ section_style }}"{% endif %}>
+      <h2{% if section_heading_style %} style="{{ section_heading_style }}"{% endif %}>Timeline</h2>
+      <table{% if table_style %} style="{{ table_style }}"{% endif %}>
+        <tbody>
+          <tr>
+            <th{% if th_style %} style="{{ th_style }}"{% endif %}>Created</th>
+            <td{% if td_style %} style="{{ td_style }}"{% endif %}>{{ format_timestamp(ticket.created_at) }}</td>
+          </tr>
+          <tr>
+            <th{% if th_style %} style="{{ th_style }}"{% endif %}>Updated</th>
+            <td{% if td_style %} style="{{ td_style }}"{% endif %}>{{ format_timestamp(ticket.updated_at) }}</td>
+          </tr>
+        </tbody>
+      </table>
     </section>
   {% endcall %}
 
   {% call with_section('meta', sections) %}
-    <section>
-      <h2>Details</h2>
-      <ul>
-        <li><strong>Status:</strong> {{ ticket.status }}</li>
-        <li><strong>Priority:</strong> {{ ticket.priority }}</li>
-        <li><strong>Due:</strong> {{ ticket.due_badge_label }}</li>
-        {% if ticket.sla_countdown %}
-          <li><strong>SLA:</strong> {{ ticket.sla_countdown }}</li>
-        {% endif %}
-      </ul>
+    <section data-clipboard-section="meta"{% if section_style %} style="{{ section_style }}"{% endif %}>
+      <h2{% if section_heading_style %} style="{{ section_heading_style }}"{% endif %}>Details</h2>
+      <table{% if table_style %} style="{{ table_style }}"{% endif %}>
+        <tbody>
+          <tr>
+            <th{% if th_style %} style="{{ th_style }}"{% endif %}>Status</th>
+            <td{% if td_style %} style="{{ td_style }}"{% endif %}>
+              <span{% if status_badge_style %} style="{{ status_badge_style }}"{% endif %}>{{ ticket.status }}</span>
+              {% if ticket.status == 'On Hold' and ticket.on_hold_reason %}
+                <span{% if inline_hint_style %} style="{{ inline_hint_style }}"{% endif %}>{{ ticket.on_hold_reason }}</span>
+              {% endif %}
+            </td>
+          </tr>
+          <tr>
+            <th{% if th_style %} style="{{ th_style }}"{% endif %}>Priority</th>
+            <td{% if td_style %} style="{{ td_style }}"{% endif %}>
+              <span{% if priority_badge_style %} style="{{ priority_badge_style }}"{% endif %}>{{ ticket.priority }}</span>
+            </td>
+          </tr>
+          <tr>
+            <th{% if th_style %} style="{{ th_style }}"{% endif %}>Due</th>
+            <td{% if td_style %} style="{{ td_style }}"{% endif %}>
+              <span{% if due_badge_style_value %} style="{{ due_badge_style_value }}"{% endif %}>{{ ticket.due_badge_label }}</span>
+              {% if not ticket.due_date and ticket.age_reference_date %}
+                <span{% if inline_hint_style %} style="{{ inline_hint_style }}"{% endif %}>Aging since {{ ticket.age_reference_date.strftime('%b %d, %Y') }}</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% if ticket.sla_countdown %}
+            <tr>
+              <th{% if th_style %} style="{{ th_style }}"{% endif %}>SLA</th>
+              <td{% if td_style %} style="{{ td_style }}"{% endif %}>{{ ticket.sla_countdown }}</td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
     </section>
   {% endcall %}
 
   {% call with_section('people', sections) %}
     {% if ticket.requester or ticket.watchers %}
-      <section>
-        <h2>People</h2>
-        <ul>
-          {% if ticket.requester %}
-            <li><strong>Requester:</strong> {{ ticket.requester }}</li>
-          {% endif %}
-          {% if ticket.watchers %}
-            <li><strong>Watchers:</strong> {{ ticket.watchers|join(', ') }}</li>
-          {% endif %}
-        </ul>
+      <section data-clipboard-section="people"{% if section_style %} style="{{ section_style }}"{% endif %}>
+        <h2{% if section_heading_style %} style="{{ section_heading_style }}"{% endif %}>People</h2>
+        <table{% if table_style %} style="{{ table_style }}"{% endif %}>
+          <tbody>
+            {% if ticket.requester %}
+              <tr>
+                <th{% if th_style %} style="{{ th_style }}"{% endif %}>Requester</th>
+                <td{% if td_style %} style="{{ td_style }}"{% endif %}>{{ ticket.requester }}</td>
+              </tr>
+            {% endif %}
+            {% if ticket.watchers %}
+              <tr>
+                <th{% if th_style %} style="{{ th_style }}"{% endif %}>Watchers</th>
+                <td{% if td_style %} style="{{ td_style }}"{% endif %}>{{ ticket.watchers|join(', ') }}</td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
       </section>
     {% endif %}
   {% endcall %}
 
   {% call with_section('description', sections) %}
     {% if ticket.description %}
-      <section>
-        <h2>Description</h2>
-        <p>{{ ticket.description|urlize|replace('\n', '<br />')|safe }}</p>
+      <section data-clipboard-section="description"{% if section_style %} style="{{ section_style }}"{% endif %}>
+        <h2{% if section_heading_style %} style="{{ section_heading_style }}"{% endif %}>Description</h2>
+        <p{% if paragraph_style %} style="{{ paragraph_style }}"{% endif %}>{{ ticket.description|urlize|replace('\n', '<br />')|safe }}</p>
       </section>
     {% endif %}
   {% endcall %}
 
   {% call with_section('links', sections) %}
     {% if ticket.links %}
-      <section>
-        <h2>Links</h2>
-        <p>{{ ticket.links|urlize|replace('\n', '<br />')|safe }}</p>
+      <section data-clipboard-section="links"{% if section_style %} style="{{ section_style }}"{% endif %}>
+        <h2{% if section_heading_style %} style="{{ section_heading_style }}"{% endif %}>Links</h2>
+        <p{% if paragraph_style %} style="{{ paragraph_style }}"{% endif %}>{{ ticket.links|urlize|replace('\n', '<br />')|safe }}</p>
       </section>
     {% endif %}
   {% endcall %}
 
   {% call with_section('notes', sections) %}
     {% if ticket.notes %}
-      <section>
-        <h2>Notes</h2>
-        <p>{{ ticket.notes|urlize|replace('\n', '<br />')|safe }}</p>
+      <section data-clipboard-section="notes"{% if section_style %} style="{{ section_style }}"{% endif %}>
+        <h2{% if section_heading_style %} style="{{ section_heading_style }}"{% endif %}>Notes</h2>
+        <p{% if paragraph_style %} style="{{ paragraph_style }}"{% endif %}>{{ ticket.notes|urlize|replace('\n', '<br />')|safe }}</p>
       </section>
     {% endif %}
   {% endcall %}
 
   {% call with_section('tags', sections) %}
     {% if ticket.tags %}
-      <section>
-        <h2>Tags</h2>
-        <ul>
+      <section data-clipboard-section="tags"{% if section_style %} style="{{ section_style }}"{% endif %}>
+        <h2{% if section_heading_style %} style="{{ section_heading_style }}"{% endif %}>Tags</h2>
+        <ul{% if tag_list_style %} style="{{ tag_list_style }}"{% endif %}>
           {% for tag in ticket.tags %}
-            <li>{{ tag.name }}</li>
+            {% set tag_background = tag.color or config.colors.tags.get('background', '#1e293b') %}
+            {% set tag_style_value = tag_badge_style + ' background-color: ' + tag_background + '; color: ' + tag_text_color + ';' if tag_badge_style else '' %}
+            <li{% if tag_item_style %} style="{{ tag_item_style }}"{% endif %}>
+              <span{% if tag_style_value %} style="{{ tag_style_value }}"{% endif %}>{{ tag.name }}</span>
+            </li>
           {% endfor %}
         </ul>
       </section>
@@ -91,23 +162,34 @@
 
   {% call with_section('updates', sections) %}
     {% if updates %}
-      <section>
-        <h2>Recent Updates</h2>
-        <ol>
+      <section data-clipboard-section="updates"{% if section_style %} style="{{ section_style }}"{% endif %}>
+        <h2{% if section_heading_style %} style="{{ section_heading_style }}"{% endif %}>Recent Updates</h2>
+        <ol{% if update_list_style %} style="{{ update_list_style }}"{% endif %}>
           {% for update in updates %}
-            <li>
-              <p>
+            {% set item_style = update_item_base_style %}
+            {% if use_inline_styles %}
+              {% if loop.first %}
+                {% set item_style = item_style + ' margin-top: 0;' %}
+              {% else %}
+                {% set item_style = item_style + ' border-top: 1px solid #e2e8f0;' %}
+              {% endif %}
+              {% if not loop.last %}
+                {% set item_style = item_style + ' margin-bottom: 12px;' %}
+              {% endif %}
+            {% endif %}
+            <li{% if item_style %} style="{{ item_style }}"{% endif %}>
+              <p{% if update_meta_style %} style="{{ update_meta_style }}"{% endif %}>
                 <strong>{{ format_timestamp(update.created_at) }}</strong>
-                by
-                {{ 'System' if update.is_system else (update.author or config.default_submitted_by) }}
+                {% set author = 'System' if update.is_system else (update.author or config.default_submitted_by) %}
+                <span{% if update_meta_detail_style %} style="{{ update_meta_detail_style }}"{% endif %}>by {{ author }}</span>
               </p>
               {% if update.status_from or update.status_to %}
-                <p>
+                <p{% if update_body_style %} style="{{ update_body_style }}"{% endif %}>
                   <strong>Status:</strong>
                   {{ update.status_from or '—' }} → {{ update.status_to or '—' }}
                 </p>
               {% endif %}
-              <p>{{ update.body|urlize|replace('\n', '<br />')|safe }}</p>
+              <p{% if update_body_last_style %} style="{{ update_body_last_style }}"{% endif %}>{{ update.body|urlize|replace('\n', '<br />')|safe }}</p>
             </li>
           {% endfor %}
         </ol>

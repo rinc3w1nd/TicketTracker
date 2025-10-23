@@ -113,6 +113,7 @@
       <article
         class="ticket-card ticket-surface{% if ticket.is_overdue %} is-overdue{% endif %}"
         data-clipboard-container
+        data-clipboard-debug="{{ 'true' if config.clipboard_summary.debug_status else 'false' }}"
         data-overdue="{{ 'true' if ticket.is_overdue else 'false' }}"
         style="--ticket-accent: {{ ticket.display_color }}; --ticket-tint: {{ ticket.tint_color }};"
         {% if is_compact and ticket.compact_tooltip %}

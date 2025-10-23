@@ -37,6 +37,8 @@ def test_load_config_records_source_path(tmp_path):
     assert payload["database"]["uri"].endswith("/:memory:")
     assert payload["clipboard_summary"]["html_sections"][1] == "timestamps"
     assert payload["clipboard_summary"]["text_sections"][1] == "timestamps"
+    assert payload["clipboard_summary"]["debug_status"] is False
+    assert payload["clipboard_summary"]["inline_styles"] is False
 
 
 def test_settings_update_persists_between_app_starts(tmp_path):
@@ -84,6 +86,8 @@ def test_settings_update_persists_between_app_starts(tmp_path):
         "notes",
     ]
     assert persisted["clipboard_summary"]["updates_limit"] == 3
+    assert persisted["clipboard_summary"]["debug_status"] is False
+    assert persisted["clipboard_summary"].get("inline_styles") is False
     assert persisted["demo_mode"] is True
 
     with app.app_context():
@@ -110,3 +114,36 @@ def test_settings_update_persists_between_app_starts(tmp_path):
             "notes",
         ]
         assert reloaded_config.clipboard_summary.updates_limit == 3
+        assert reloaded_config.clipboard_summary.debug_status is False
+
+
+def test_clipboard_debug_toggle_round_trip(tmp_path):
+    config_data = _default_config()
+    config_path = _write_config(tmp_path / "config.json", config_data)
+
+    app = create_app(config_path)
+    client = app.test_client()
+    response = client.post(
+        "/settings",
+        data={
+            "default_submitted_by": config_data["default_submitted_by"],
+            "priorities": "\n".join(config_data["priorities"]),
+            "hold_reasons": "\n".join(config_data["hold_reasons"]),
+            "workflow": "\n".join(config_data["workflow"]),
+            "html_sections": "\n".join(config_data["clipboard_summary"]["html_sections"]),
+            "text_sections": "\n".join(config_data["clipboard_summary"]["text_sections"]),
+            "updates_limit": str(config_data["clipboard_summary"]["updates_limit"]),
+            "clipboard_debug_status": "on",
+        },
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+
+    persisted = json.loads(config_path.read_text())
+    assert persisted["clipboard_summary"]["debug_status"] is True
+
+    reloaded_app = create_app(config_path)
+    with reloaded_app.app_context():
+        reloaded_config = current_app.config["APP_CONFIG"]
+        assert reloaded_config.clipboard_summary.debug_status is True

@@ -74,6 +74,8 @@
       "tags",
       "updates"
     ],
-    "updates_limit": 1
+    "updates_limit": 1,
+    "debug_status": false,
+    "inline_styles": true
   }
 }

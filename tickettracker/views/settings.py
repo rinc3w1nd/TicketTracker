@@ -102,6 +102,7 @@ def _form_defaults(config: AppConfig) -> Dict[str, object]:
         "html_sections": "\n".join(html_sections),
         "text_sections": "\n".join(text_sections),
         "updates_limit": str(config.clipboard_summary.updates_limit),
+        "clipboard_debug_status": config.clipboard_summary.debug_status,
         "demo_mode": config.demo_mode,
     }
 
@@ -122,6 +123,7 @@ def view_settings():
         html_sections_input = request.form.get("html_sections", "")
         text_sections_input = request.form.get("text_sections", "")
         updates_limit_input = request.form.get("updates_limit", "").strip()
+        debug_status_enabled = request.form.get("clipboard_debug_status") is not None
         demo_mode_enabled = request.form.get("demo_mode") is not None
 
         form_data = {
@@ -132,6 +134,7 @@ def view_settings():
             "html_sections": html_sections_input,
             "text_sections": text_sections_input,
             "updates_limit": updates_limit_input,
+            "clipboard_debug_status": debug_status_enabled,
             "demo_mode": demo_mode_enabled,
         }
 
@@ -183,6 +186,7 @@ def view_settings():
                 html_sections=html_sections,
                 text_sections=text_sections,
                 updates_limit=updates_limit,
+                debug_status=debug_status_enabled,
             )
 
             updated_config = replace(
