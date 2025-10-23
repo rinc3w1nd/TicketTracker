@@ -115,3 +115,7 @@ Enabling demo mode snapshots the current SQLite database and uploads directory i
 - Status transitions automatically create audit-log entries on the ticket timeline.
 - Attachments may be added when creating tickets or posting updates, and can be downloaded from the detail page.
 - SLA-based colouring, tag chips, and hold-reason presets all respond to configuration changes without code edits.
+
+## License
+
+TicketTracker is distributed under the [MIT License](LICENSE). You may use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the software, provided that the copyright notice and permission notice are included in all copies or substantial portions of the software.
