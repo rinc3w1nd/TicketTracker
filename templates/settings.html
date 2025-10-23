@@ -4,28 +4,32 @@
 {% block title %}Settings · TicketTracker{% endblock %}
 {% block content %}
   <section class="panel settings-panel">
-    <h2>Application settings</h2>
-    <p class="help">
-      {% if config.source_path %}
-        Changes are saved to <code>{{ config.source_path }}</code>.
-      {% else %}
-        Changes are saved to the default configuration file.
-      {% endif %}
-    </p>
     <form
       method="post"
       action="{{ url_for('settings.view_settings', compact=compact_value) }}"
       class="settings-form"
     >
-      <div class="field-group">
-        <label for="default_submitted_by">Default submitted by</label>
-        <input
-          type="text"
-          id="default_submitted_by"
-          name="default_submitted_by"
-          value="{{ form.default_submitted_by|default('') }}"
-          required
-        />
+      <div class="settings-header-row">
+        <div class="settings-header-intro">
+          <h2>Application settings</h2>
+          <p class="help">
+            {% if config.source_path %}
+              Changes are saved to <code>{{ config.source_path }}</code>.
+            {% else %}
+              Changes are saved to the default configuration file.
+            {% endif %}
+          </p>
+        </div>
+        <div class="settings-header-control field-group">
+          <label for="default_submitted_by">Default submitted by</label>
+          <input
+            type="text"
+            id="default_submitted_by"
+            name="default_submitted_by"
+            value="{{ form.default_submitted_by|default('') }}"
+            required
+          />
+        </div>
       </div>
 
       <div class="field-row field-row--thirds">
