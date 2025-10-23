@@ -213,6 +213,24 @@ class TicketTooltipController {
     return Array.from(this.tooltip.querySelectorAll(selectors.join(',')));
   }
 
+  isPointerWithinTriggerBounds() {
+    if (!this.pointerPosition) {
+      return false;
+    }
+    const rect = this.trigger.getBoundingClientRect();
+    const { x, y } = this.pointerPosition;
+    return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+  }
+
+  isPointerWithinTooltipBounds() {
+    if (!this.pointerPosition) {
+      return false;
+    }
+    const rect = this.tooltip.getBoundingClientRect();
+    const { x, y } = this.pointerPosition;
+    return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+  }
+
   startPointerTracking(event) {
     if (event && typeof event.pointerId === 'number') {
       this.activePointerId = event.pointerId;
@@ -273,6 +291,14 @@ class TicketTooltipController {
     this.pointerStationaryTimeout = null;
     if (!this.hovering) {
       return;
+    }
+    if (this.pointerPosition) {
+      if (!this.isPointerWithinTriggerBounds()) {
+        return;
+      }
+      if (this.isPointerWithinTooltipBounds()) {
+        return;
+      }
     }
     if (!this.pointerPosition) {
       if (this.active) {
