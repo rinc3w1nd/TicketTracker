@@ -288,7 +288,6 @@ def _color_category_entries(
                         "label": "Ticket title",
                         "entry": ticket_entry,
                         "field_name": "colors[ticket_title]",
-                        "text_field_name": "colors_hex[ticket_title]",
                     }
                 ],
             )
@@ -334,7 +333,6 @@ def _color_category_entries(
                 "label": label,
                 "entry": entry,
                 "field_name": f"colors[gradient][{key}]",
-                "text_field_name": f"colors_hex[gradient][{key}]",
             }
         )
     if gradient_entries:
@@ -358,7 +356,6 @@ def _color_category_entries(
                 "label": label,
                 "entry": entry,
                 "field_name": f"colors[statuses][{key}]",
-                "text_field_name": f"colors_hex[statuses][{key}]",
             }
         )
     if status_entries:
@@ -379,7 +376,6 @@ def _color_category_entries(
                 "label": str(key),
                 "entry": entry,
                 "field_name": f"colors[priorities][{key}]",
-                "text_field_name": f"colors_hex[priorities][{key}]",
             }
         )
     if priority_entries:
@@ -403,7 +399,6 @@ def _color_category_entries(
                 "label": label,
                 "entry": entry,
                 "field_name": f"colors[tags][{key}]",
-                "text_field_name": f"colors_hex[tags][{key}]",
             }
         )
     if tag_entries:
@@ -425,27 +420,20 @@ def _process_color_entry(
 
     default_value = str(entry.get("default", entry.get("value", "")))
     field_name = str(entry_info.get("field_name", ""))
-    text_field_name = str(entry_info.get("text_field_name", ""))
-
     color_value = str(form_data.get(field_name, "")).strip()
-    text_value = str(form_data.get(text_field_name, "")).strip()
-    chosen_value = text_value or color_value
 
-    if not chosen_value:
+    if not color_value:
         entry["value"] = default_value
-        entry["text"] = ""
         return
 
-    normalized = normalize_hex_color(chosen_value)
+    normalized = normalize_hex_color(color_value)
     if normalized is None:
-        entry["text"] = chosen_value
         entry.setdefault("value", default_value)
         label = str(entry_info.get("label", "color"))
         invalid_labels.append(label)
         return
 
     entry["value"] = normalized
-    entry["text"] = normalized
 
 
 def _color_sections(
@@ -465,10 +453,8 @@ def _color_sections(
                     "key": entry_info["key"],
                     "label": entry_info["label"],
                     "value": entry.get("value", entry.get("default")),
-                    "text": entry.get("text", entry.get("value")),
                     "default": entry.get("default", entry.get("value")),
                     "field_name": entry_info["field_name"],
-                    "text_field_name": entry_info["text_field_name"],
                 }
             )
         if section_entries:

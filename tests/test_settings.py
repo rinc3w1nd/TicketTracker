@@ -272,20 +272,17 @@ def test_update_color_palette(tmp_path):
     payload = _settings_form_data(config_data)
     payload.update(
         {
-            "colors_hex[ticket_title]": "ddeeff",
-            "colors_hex[gradient][stage0]": "#112233",
-            "colors_hex[gradient][stage1]": "#223344",
-            "colors_hex[gradient][stage2]": "",
-            "colors_hex[gradient][stage3]": "#556677",
-            "colors_hex[gradient][overdue]": "#778899",
-            "colors_hex[statuses][resolved]": "336699",
-            "colors_hex[statuses][on_hold]": "",
-            "colors_hex[priorities][Low]": "",
-            "colors_hex[priorities][Medium]": "#00aa00",
-            "colors_hex[priorities][High]": "#abc",
-            "colors_hex[priorities][Critical]": "#123456",
-            "colors_hex[tags][background]": "#010203",
-            "colors_hex[tags][text]": "#fefefe",
+            "colors[ticket_title]": "#ddeeff",
+            "colors[gradient][stage0]": "#112233",
+            "colors[gradient][stage1]": "#223344",
+            "colors[gradient][stage3]": "#556677",
+            "colors[gradient][overdue]": "#778899",
+            "colors[statuses][resolved]": "#336699",
+            "colors[priorities][Medium]": "#00aa00",
+            "colors[priorities][High]": "#abc",
+            "colors[priorities][Critical]": "#123456",
+            "colors[tags][background]": "#010203",
+            "colors[tags][text]": "#fefefe",
         }
     )
 
