@@ -61,36 +61,57 @@
         <p class="help">List statuses in the order they should appear in dropdowns.</p>
       </div>
 
-      <div class="field-group">
-        <label for="html_sections">Clipboard HTML sections</label>
-        <textarea
-          id="html_sections"
-          name="html_sections"
-          rows="4"
-        >{{- form.html_sections|default('') -}}</textarea>
+      <fieldset class="field-group clipboard-sections">
+        <legend>Clipboard sections</legend>
+        <table class="clipboard-sections-table">
+          <thead>
+            <tr>
+              <th scope="col">Section</th>
+              <th scope="col">HTML</th>
+              <th scope="col">Text</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for section, description in clipboard_sections %}
+              <tr>
+                <th scope="row">
+                  <div class="clipboard-section-label">
+                    <code>{{ section }}</code>
+                    <p>{{ description }}</p>
+                  </div>
+                </th>
+                <td>
+                  <label class="checkbox-label">
+                    <input
+                      type="checkbox"
+                      name="html_sections"
+                      value="{{ section }}"
+                      {% if section in form.selected_html_sections %}checked{% endif %}
+                    />
+                    <span class="sr-only">Include {{ section }} in HTML exports</span>
+                  </label>
+                </td>
+                <td>
+                  <label class="checkbox-label">
+                    <input
+                      type="checkbox"
+                      name="text_sections"
+                      value="{{ section }}"
+                      {% if section in form.selected_text_sections %}checked{% endif %}
+                    />
+                    <span class="sr-only">Include {{ section }} in text exports</span>
+                  </label>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <p class="help">Select the sections to include in clipboard exports.</p>
         <p class="help">
-          List clipboard section names one per line to control HTML clipboard exports.
-          Available sections:
+          If no text sections are selected, the HTML selection is reused for plain text
+          summaries. Custom sections configured elsewhere appear at the end of the list.
         </p>
-        <ul class="help-list">
-          {% for section, description in clipboard_sections.items() %}
-            <li><code>{{ section }}</code> — {{ description }}</li>
-          {% endfor %}
-        </ul>
-      </div>
-
-      <div class="field-group">
-        <label for="text_sections">Clipboard text sections</label>
-        <textarea
-          id="text_sections"
-          name="text_sections"
-          rows="4"
-        >{{- form.text_sections|default('') -}}</textarea>
-        <p class="help">
-          Leave blank to reuse the HTML section list for plain text summaries. Include
-          <code>timestamps</code> to copy created/updated times or remove it to omit them.
-        </p>
-      </div>
+      </fieldset>
 
       <div class="field-group">
         <label for="updates_limit">Clipboard updates limit</label>
