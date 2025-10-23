@@ -160,41 +160,104 @@
       <fieldset class="field-group color-settings">
         <legend>Colors</legend>
         <p class="help">
-          Customize the ticket palette. Leave a hex value blank to restore the default
-          color.
+          Customize the ticket palette. Select a chip to pick a new color or choose the
+          default shade again to restore it.
         </p>
+        {% set palette = namespace(ticket=None, columns=[], remainder=[]) %}
+        {% for section in color_sections %}
+          {% if section.name == 'ticket_title' %}
+            {% set palette.ticket = section %}
+          {% elif section.name in ['gradient', 'statuses', 'priorities'] %}
+            {% set palette.columns = palette.columns + [section] %}
+          {% else %}
+            {% set palette.remainder = palette.remainder + [section] %}
+          {% endif %}
+        {% endfor %}
         <div class="color-palette">
-          {% for section in color_sections %}
-            <div class="color-section">
+          {% if palette.ticket and palette.ticket.entries %}
+            {% set ticket_entry = palette.ticket.entries[0] %}
+            {% set key_slug = ticket_entry.key|lower|replace(' ', '-')|replace('/', '-')|replace('[', '-')|replace(']', '-') %}
+            {% set input_id = 'color_%s_%s' | format(palette.ticket.name, key_slug) %}
+            <div class="color-section color-section--ticket">
+              <div class="color-section-heading">
+                <h3>{{ palette.ticket.label }}</h3>
+                <div class="color-chip-field" style="--chip-color: {{ ticket_entry.value or ticket_entry.default }};">
+                  <input
+                    type="color"
+                    class="sr-only color-chip-control__input"
+                    id="{{ input_id }}"
+                    name="{{ ticket_entry.field_name }}"
+                    value="{{ ticket_entry.value or ticket_entry.default }}"
+                    aria-label="{{ ticket_entry.label }} color"
+                  />
+                  <label class="color-chip-control" for="{{ input_id }}" title="{{ ticket_entry.label }} ({{ ticket_entry.value or ticket_entry.default }})">
+                    <span class="color-chip-control__swatch" aria-hidden="true"></span>
+                    <span class="color-chip-control__meta">
+                      <span class="color-chip-control__label">{{ ticket_entry.label }}</span>
+                      <span class="color-chip-control__value">{{ ticket_entry.value or ticket_entry.default }}</span>
+                    </span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          {% endif %}
+
+          {% if palette.columns %}
+            <div class="color-section-columns">
+              {% for section in palette.columns %}
+                <div class="color-section color-section--{{ section.name }}">
+                  <h3>{{ section.label }}</h3>
+                  <div class="color-section-grid">
+                    {% for entry in section.entries %}
+                      {% set key_slug = entry.key|lower|replace(' ', '-')|replace('/', '-')|replace('[', '-')|replace(']', '-') %}
+                      {% set input_id = 'color_%s_%s' | format(section.name, key_slug) %}
+                      <div class="color-chip-field" style="--chip-color: {{ entry.value or entry.default }};">
+                        <input
+                          type="color"
+                          class="sr-only color-chip-control__input"
+                          id="{{ input_id }}"
+                          name="{{ entry.field_name }}"
+                          value="{{ entry.value or entry.default }}"
+                          aria-label="{{ entry.label }} color"
+                        />
+                        <label class="color-chip-control" for="{{ input_id }}" title="{{ entry.label }} ({{ entry.value or entry.default }})">
+                          <span class="color-chip-control__swatch" aria-hidden="true"></span>
+                          <span class="color-chip-control__meta">
+                            <span class="color-chip-control__label">{{ entry.label }}</span>
+                            <span class="color-chip-control__value">{{ entry.value or entry.default }}</span>
+                          </span>
+                        </label>
+                      </div>
+                    {% endfor %}
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+
+          {% for section in palette.remainder %}
+            <div class="color-section color-section--{{ section.name }}">
               <h3>{{ section.label }}</h3>
               <div class="color-section-grid">
                 {% for entry in section.entries %}
                   {% set key_slug = entry.key|lower|replace(' ', '-')|replace('/', '-')|replace('[', '-')|replace(']', '-') %}
-                  {% set input_id = "color_%s_%s" | format(section.name, key_slug) %}
-                  <div class="color-entry">
-                    <div class="color-entry-label">
-                      <span class="color-chip" style="background-color: {{ entry.value }}" aria-hidden="true"></span>
-                      <span>{{ entry.label }}</span>
-                    </div>
-                    <div class="color-entry-inputs">
-                      <input
-                        type="color"
-                        id="{{ input_id }}"
-                        name="{{ entry.field_name }}"
-                        value="{{ entry.value }}"
-                        aria-label="{{ entry.label }} color"
-                      />
-                      <input
-                        type="text"
-                        class="color-hex-input"
-                        name="{{ entry.text_field_name }}"
-                        value="{{ entry.text }}"
-                        placeholder="{{ entry.default }}"
-                        pattern="#?[0-9a-fA-F]{3}([0-9a-fA-F]{3})?"
-                        title="Enter a hex color like #AABBCC or #ABC"
-                        aria-label="{{ entry.label }} hex value"
-                      />
-                    </div>
+                  {% set input_id = 'color_%s_%s' | format(section.name, key_slug) %}
+                  <div class="color-chip-field" style="--chip-color: {{ entry.value or entry.default }};">
+                    <input
+                      type="color"
+                      class="sr-only color-chip-control__input"
+                      id="{{ input_id }}"
+                      name="{{ entry.field_name }}"
+                      value="{{ entry.value or entry.default }}"
+                      aria-label="{{ entry.label }} color"
+                    />
+                    <label class="color-chip-control" for="{{ input_id }}" title="{{ entry.label }} ({{ entry.value or entry.default }})">
+                      <span class="color-chip-control__swatch" aria-hidden="true"></span>
+                      <span class="color-chip-control__meta">
+                        <span class="color-chip-control__label">{{ entry.label }}</span>
+                        <span class="color-chip-control__value">{{ entry.value or entry.default }}</span>
+                      </span>
+                    </label>
                   </div>
                 {% endfor %}
               </div>

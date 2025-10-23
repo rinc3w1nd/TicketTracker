@@ -1160,13 +1160,13 @@ body.compact .filter-fields .filter-actions {
 .color-settings .color-palette {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.75rem;
 }
 
 .color-section {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.85rem;
 }
 
 .color-section h3 {
@@ -1175,72 +1175,90 @@ body.compact .filter-fields .filter-actions {
   color: #f8fafc;
 }
 
-.color-section-grid {
-  display: grid;
+.color-section-heading {
+  display: flex;
+  align-items: center;
   gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-}
-
-.color-entry {
-  background: rgba(15, 23, 42, 0.45);
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  border-radius: 0.75rem;
-  padding: 0.75rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-
-.color-entry-label {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  font-size: 0.9rem;
-  color: rgba(248, 250, 252, 0.9);
-}
-
-.color-chip {
-  width: 1.5rem;
-  height: 1.5rem;
-  border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.35);
-  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.6) inset;
-}
-
-.color-entry-inputs {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
   flex-wrap: wrap;
 }
 
-.color-entry-inputs input[type="color"] {
-  border: none;
-  padding: 0;
-  width: 3rem;
-  height: 2.25rem;
-  background: transparent;
-  cursor: pointer;
+.color-section-columns {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
-.color-entry-inputs input[type="color"]::-webkit-color-swatch-wrapper {
-  padding: 0;
+
+.color-section-grid {
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
-.color-entry-inputs input[type="color"]::-webkit-color-swatch {
-  border: 1px solid rgba(148, 163, 184, 0.3);
-  border-radius: 0.5rem;
-}
-
-.color-entry-inputs input[type="color"]::-moz-color-swatch {
-  border: 1px solid rgba(148, 163, 184, 0.3);
-  border-radius: 0.5rem;
-}
-
-.color-hex-input {
-  flex: 1 1 8ch;
+.color-chip-field {
+  --chip-color: rgba(148, 163, 184, 0.4);
+  display: block;
+  position: relative;
+  border-radius: 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--chip-color) 40%, rgba(148, 163, 184, 0.2));
+  background: color-mix(in srgb, var(--chip-color) 18%, rgba(15, 23, 42, 0.92));
+  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
   min-width: 0;
+}
+
+.color-chip-field:hover {
+  border-color: color-mix(in srgb, var(--chip-color) 55%, rgba(148, 163, 184, 0.38));
+  background: color-mix(in srgb, var(--chip-color) 24%, rgba(15, 23, 42, 0.92));
+}
+
+.color-chip-field:focus-within {
+  border-color: color-mix(in srgb, var(--chip-color) 65%, var(--accent) 55%);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--chip-color) 20%, var(--accent) 55%, transparent 45%);
+}
+
+.color-chip-control {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.75rem 0.9rem;
+  width: 100%;
+  cursor: pointer;
+  border-radius: inherit;
+  color: rgba(248, 250, 252, 0.92);
+}
+
+.color-chip-control__swatch {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  background: var(--chip-color);
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.6) inset;
+  border: 1px solid rgba(15, 23, 42, 0.55);
+  flex-shrink: 0;
+}
+
+.color-chip-control__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.color-chip-control__label {
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.color-chip-control__value {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
+  color: color-mix(in srgb, var(--chip-color) 18%, var(--text-muted));
+}
+
+.color-chip-control__input {
+  position: absolute;
 }
 
 .tag-mode {
