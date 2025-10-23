@@ -4,13 +4,21 @@
 {% set include_timestamps = 'timestamps' in sections %}
 {% set accent_color = ticket.display_color or '#38bdf8' %}
 {% set tint_color = ticket.tint_color or 'rgba(56, 189, 248, 0.22)' %}
-{% set title_color = ticket_title_color|default('#f8fafc') %}
+{% set title_color = ticket_title_color|default('#0f172a') %}
 {% set status_color = ticket.status_color or accent_color %}
 {% set priority_color = config.colors.priorities.get(ticket.priority, '#3b82f6') %}
 {% set due_color = ticket.due_badge_color or '#e2e8f0' %}
-{% set muted_color = 'rgba(148, 163, 184, 0.85)' %}
-{% set text_color = '#e2e8f0' %}
-{% set tag_text_color = config.colors.tags.get('text', '#f8fafc') %}
+{% set muted_color = '#475569' %}
+{% set text_color = '#0f172a' %}
+{% set section_background = 'rgba(255, 255, 255, 0.86)' %}
+{% set section_strong_background = 'rgba(255, 255, 255, 0.88)' %}
+{% set section_border = 'rgba(148, 163, 184, 0.32)' %}
+{% set section_shadow = '0 18px 40px rgba(15, 23, 42, 0.08)' %}
+{% set article_shadow = '0 24px 45px rgba(15, 23, 42, 0.12)' %}
+{% set timeline_surface = 'rgba(255, 255, 255, 0.92)' %}
+{% set timeline_border = 'rgba(148, 163, 184, 0.28)' %}
+{% set article_background = "linear-gradient(160deg, rgba(248, 250, 252, 0.98) 0%, rgba(241, 245, 249, 0.96) 55%, rgba(226, 232, 240, 0.94) 100%), linear-gradient(120deg, " ~ tint_color ~ " 0%, rgba(248, 250, 252, 0) 70%)" %}
+{% set tag_text_color = config.colors.tags.get('text', '#0f172a') %}
 {% set article_properties = [
   '--ticket-accent: ' ~ accent_color,
   '--ticket-tint: ' ~ tint_color,
@@ -18,31 +26,41 @@
   '--ticket-status-color: ' ~ status_color,
   '--ticket-priority-color: ' ~ priority_color,
   '--ticket-due-color: ' ~ due_color,
+  '--clipboard-text: ' ~ text_color,
+  '--clipboard-muted: ' ~ muted_color,
+  '--clipboard-surface: ' ~ section_background,
+  '--clipboard-surface-strong: ' ~ section_strong_background,
+  '--clipboard-border: ' ~ section_border,
+  '--clipboard-shadow: ' ~ section_shadow,
+  '--clipboard-article-shadow: ' ~ article_shadow,
+  '--clipboard-timeline-surface: ' ~ timeline_surface,
+  '--clipboard-timeline-border: ' ~ timeline_border,
 ] %}
 {% set article_style_parts = article_properties + ([
   "font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif",
-  "background: linear-gradient(155deg, " ~ tint_color ~ " 0%, rgba(17, 24, 39, 0.92) 52%, rgba(15, 23, 42, 0.82) 100%)",
+  "background: " ~ article_background,
   "color: " ~ text_color,
   "border-radius: 28px",
-  "border: 1px solid rgba(148, 163, 184, 0.18)",
+  "border: 1px solid " ~ section_border,
   "padding: 32px",
   "box-sizing: border-box",
   "width: 100%",
   "line-height: 1.6",
   "background-clip: padding-box",
+  "box-shadow: " ~ article_shadow,
 ] if use_inline_styles else []) %}
 {% set article_style = article_style_parts | join('; ') %}
-{% set header_style = "display: flex; justify-content: space-between; gap: 24px; align-items: flex-start; margin-bottom: 28px;" if use_inline_styles else "" %}
+{% set header_style = "display: flex; justify-content: space-between; gap: 24px; align-items: flex-start; margin-bottom: 28px; padding: 24px; border-radius: 24px; background: " ~ section_strong_background ~ "; border: 1px solid " ~ section_border ~ "; box-shadow: " ~ section_shadow ~ ";" if use_inline_styles else "" %}
 {% set title_group_style = "display: flex; flex-direction: column; gap: 12px;" if use_inline_styles else "" %}
 {% set title_style = "margin: 0; font-size: 28px; line-height: 1.2; color: " ~ title_color ~ ";" if use_inline_styles else "" %}
 {% set timestamps_style = "display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: " ~ muted_color ~ "; text-align: right;" if use_inline_styles else "" %}
-{% set section_style = "margin-top: 28px;" if use_inline_styles else "" %}
+{% set section_style = "margin-top: 28px; padding: 24px; border-radius: 24px; background: " ~ section_background ~ "; border: 1px solid " ~ section_border ~ "; box-shadow: " ~ section_shadow ~ ";" if use_inline_styles else "" %}
 {% set section_heading_style = "margin: 0 0 12px 0; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: " ~ muted_color ~ ";" if use_inline_styles else "" %}
 {% set paragraph_style = "margin: 0; color: " ~ text_color ~ ";" if use_inline_styles else "" %}
 {% set table_style = "width: 100%; border-collapse: collapse;" if use_inline_styles else "" %}
 {% set th_style = "padding: 6px 0; width: 32%; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: " ~ muted_color ~ "; vertical-align: top;" if use_inline_styles else "" %}
 {% set td_style = "padding: 6px 0; color: " ~ text_color ~ "; vertical-align: top;" if use_inline_styles else "" %}
-{% set badge_base_style = "display: inline-flex; align-items: center; justify-content: center; padding: 4px 12px; border-radius: 999px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; box-shadow: 0 6px 18px rgba(2, 6, 23, 0.35); border: 1px solid rgba(148, 163, 184, 0.35);" if use_inline_styles else "" %}
+{% set badge_base_style = "display: inline-flex; align-items: center; justify-content: center; padding: 4px 12px; border-radius: 999px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12); border: 1px solid rgba(148, 163, 184, 0.35);" if use_inline_styles else "" %}
 {% set status_badge_style = badge_base_style + " background: " + status_color + "; color: #f8fafc;" if badge_base_style else "" %}
 {% set priority_badge_style = badge_base_style + " background: " + priority_color + "; color: #0f172a; box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.35), 0 8px 16px rgba(2, 6, 23, 0.35);" if badge_base_style else "" %}
 {% set due_badge_style_value = badge_base_style + " background: " + due_color + "; color: #f8fafc;" if badge_base_style else "" %}
@@ -50,11 +68,11 @@
 {% set status_note_style = "margin-left: 8px; font-size: 12px; color: " ~ muted_color ~ "; letter-spacing: 0.03em;" if use_inline_styles else "" %}
 {% set inline_hint_style = "margin-left: 8px; font-size: 12px; color: " ~ muted_color ~ "; letter-spacing: 0.03em;" if use_inline_styles else "" %}
 {% set tag_list_style = "list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px;" if use_inline_styles else "" %}
-{% set tag_badge_base_style = "display: inline-flex; align-items: center; padding: 6px 12px; border-radius: 999px; font-size: 12px; letter-spacing: 0.03em;" if use_inline_styles else "" %}
-{% set timeline_style = "list-style: none; margin: 24px 0 0; padding: 0 0 0 20px; border-left: 2px solid rgba(148, 163, 184, 0.2); display: grid; gap: 24px;" if use_inline_styles else "" %}
+{% set tag_badge_base_style = "display: inline-flex; align-items: center; padding: 6px 12px; border-radius: 999px; font-size: 12px; letter-spacing: 0.03em; border: 1px solid rgba(148, 163, 184, 0.25);" if use_inline_styles else "" %}
+{% set timeline_style = "list-style: none; margin: 24px 0 0; padding: 0 0 0 20px; border-left: 2px solid " ~ timeline_border ~ "; display: grid; gap: 24px;" if use_inline_styles else "" %}
 {% set timeline_item_style = "position: relative; padding-left: 24px;" if use_inline_styles else "" %}
-{% set timeline_marker_style = "position: absolute; left: -12px; top: 8px; width: 10px; height: 10px; border-radius: 50%; background: " ~ accent_color ~ "; box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.12);" if use_inline_styles else "" %}
-{% set timeline_content_style = "background: rgba(15, 23, 42, 0.65); border: 1px solid rgba(148, 163, 184, 0.18); border-radius: 16px; padding: 16px; color: " ~ text_color ~ ";" if use_inline_styles else "" %}
+{% set timeline_marker_style = "position: absolute; left: -12px; top: 8px; width: 10px; height: 10px; border-radius: 50%; background: " ~ accent_color ~ "; box-shadow: 0 0 0 6px rgba(56, 189, 248, 0.18);" if use_inline_styles else "" %}
+{% set timeline_content_style = "background: " ~ timeline_surface ~ "; border: 1px solid " ~ timeline_border ~ "; border-radius: 16px; padding: 16px; color: " ~ text_color ~ "; box-shadow: " ~ section_shadow ~ ";" if use_inline_styles else "" %}
 {% set timeline_meta_style = "display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 13px; color: " ~ muted_color ~ "; margin: 0 0 8px;" if use_inline_styles else "" %}
 {% set timeline_body_style = "margin: 0 0 8px 0; color: " ~ text_color ~ ";" if use_inline_styles else "" %}
 {% set timeline_body_last_style = "margin: 0; color: " ~ text_color ~ ";" if use_inline_styles else "" %}
@@ -63,19 +81,25 @@
   .ticket-clipboard-summary {
     font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
     background: linear-gradient(
-      155deg,
-      var(--ticket-tint, rgba(56, 189, 248, 0.22)) 0%,
-      rgba(17, 24, 39, 0.92) 52%,
-      rgba(15, 23, 42, 0.82) 100%
-    );
-    color: #e2e8f0;
+        160deg,
+        rgba(248, 250, 252, 0.98) 0%,
+        rgba(241, 245, 249, 0.96) 55%,
+        rgba(226, 232, 240, 0.94) 100%
+      ),
+      linear-gradient(
+        120deg,
+        var(--ticket-tint, rgba(56, 189, 248, 0.25)) 0%,
+        rgba(248, 250, 252, 0) 70%
+      );
+    color: var(--clipboard-text, #0f172a);
     border-radius: 1.75rem;
-    border: 1px solid rgba(148, 163, 184, 0.18);
+    border: 1px solid var(--clipboard-border, rgba(148, 163, 184, 0.32));
     padding: 2rem;
     box-sizing: border-box;
     width: 100%;
     line-height: 1.6;
     background-clip: padding-box;
+    box-shadow: var(--clipboard-article-shadow, 0 24px 45px rgba(15, 23, 42, 0.12));
   }
 
   .ticket-clipboard-summary * {
@@ -92,6 +116,11 @@
     gap: 1.5rem;
     align-items: flex-start;
     margin-bottom: 1.75rem;
+    padding: 1.5rem;
+    border-radius: 1.5rem;
+    background: var(--clipboard-surface-strong, rgba(255, 255, 255, 0.88));
+    border: 1px solid var(--clipboard-border, rgba(148, 163, 184, 0.32));
+    box-shadow: var(--clipboard-shadow, 0 18px 40px rgba(15, 23, 42, 0.08));
   }
 
   .ticket-clipboard-summary .summary-title-group {
@@ -104,7 +133,7 @@
     margin: 0;
     font-size: 1.75rem;
     line-height: 1.2;
-    color: var(--ticket-title-color, #f8fafc);
+    color: var(--ticket-title-color, #0f172a);
   }
 
   .ticket-clipboard-summary .summary-timestamps {
@@ -112,12 +141,17 @@
     flex-direction: column;
     gap: 0.35rem;
     font-size: 0.8rem;
-    color: rgba(148, 163, 184, 0.9);
+    color: var(--clipboard-muted, #475569);
     text-align: right;
   }
 
   .ticket-clipboard-summary .summary-section {
     margin-top: 1.75rem;
+    padding: 1.5rem;
+    border-radius: 1.5rem;
+    background: var(--clipboard-surface, rgba(255, 255, 255, 0.86));
+    border: 1px solid var(--clipboard-border, rgba(148, 163, 184, 0.32));
+    box-shadow: var(--clipboard-shadow, 0 18px 40px rgba(15, 23, 42, 0.08));
   }
 
   .ticket-clipboard-summary .summary-section h2 {
@@ -125,12 +159,12 @@
     font-size: 0.75rem;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: rgba(148, 163, 184, 0.95);
+    color: var(--clipboard-muted, #475569);
   }
 
   .ticket-clipboard-summary .summary-section p {
     margin: 0;
-    color: #e2e8f0;
+    color: var(--clipboard-text, #0f172a);
   }
 
   .ticket-clipboard-summary .summary-table {
@@ -144,19 +178,19 @@
     font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: rgba(148, 163, 184, 0.85);
+    color: var(--clipboard-muted, #475569);
     vertical-align: top;
   }
 
   .ticket-clipboard-summary .summary-table td {
     padding: 0.35rem 0;
-    color: #f8fafc;
+    color: var(--clipboard-text, #0f172a);
     vertical-align: top;
   }
 
   .ticket-clipboard-summary .summary-table tr + tr td,
   .ticket-clipboard-summary .summary-table tr + tr th {
-    border-top: 1px solid rgba(148, 163, 184, 0.16);
+    border-top: 1px solid rgba(148, 163, 184, 0.2);
   }
 
   .ticket-clipboard-summary .badge {
@@ -170,7 +204,7 @@
     text-transform: uppercase;
     letter-spacing: 0.08em;
     white-space: nowrap;
-    box-shadow: 0 6px 18px rgba(2, 6, 23, 0.35);
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
     border: 1px solid rgba(148, 163, 184, 0.35);
   }
 
@@ -198,14 +232,14 @@
   .ticket-clipboard-summary .status-note,
   .ticket-clipboard-summary .age-badge {
     font-size: 0.75rem;
-    color: rgba(148, 163, 184, 0.85);
+    color: var(--clipboard-muted, #475569);
     letter-spacing: 0.03em;
   }
 
   .ticket-clipboard-summary .status-note::before {
     content: "·";
     margin: 0 0.35rem;
-    color: rgba(148, 163, 184, 0.7);
+    color: rgba(148, 163, 184, 0.6);
   }
 
   .ticket-clipboard-summary .summary-tags {
@@ -223,14 +257,15 @@
     font-size: 0.75rem;
     letter-spacing: 0.03em;
     background: var(--tag-color, rgba(30, 41, 59, 0.85));
-    color: var(--tag-text, #f8fafc);
+    color: var(--tag-text, #0f172a);
+    border: 1px solid rgba(148, 163, 184, 0.25);
   }
 
   .ticket-clipboard-summary .summary-timeline {
     list-style: none;
     margin: 1.5rem 0 0;
     padding: 0 0 0 1.25rem;
-    border-left: 2px solid rgba(148, 163, 184, 0.2);
+    border-left: 2px solid var(--clipboard-timeline-border, rgba(148, 163, 184, 0.28));
     display: grid;
     gap: 1.5rem;
   }
@@ -248,15 +283,16 @@
     height: 0.65rem;
     border-radius: 50%;
     background: var(--ticket-accent, #38bdf8);
-    box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.12);
+    box-shadow: 0 0 0 6px rgba(56, 189, 248, 0.18);
   }
 
   .ticket-clipboard-summary .timeline-content {
-    background: rgba(15, 23, 42, 0.65);
-    border: 1px solid rgba(148, 163, 184, 0.18);
+    background: var(--clipboard-timeline-surface, rgba(255, 255, 255, 0.92));
+    border: 1px solid var(--clipboard-timeline-border, rgba(148, 163, 184, 0.28));
     border-radius: 1rem;
     padding: 1rem;
-    color: #e2e8f0;
+    color: var(--clipboard-text, #0f172a);
+    box-shadow: var(--clipboard-shadow, 0 18px 40px rgba(15, 23, 42, 0.08));
   }
 
   .ticket-clipboard-summary .timeline-meta {
@@ -264,17 +300,17 @@
     flex-wrap: wrap;
     gap: 0.5rem 1rem;
     font-size: 0.8rem;
-    color: rgba(148, 163, 184, 0.85);
+    color: var(--clipboard-muted, #475569);
     margin-bottom: 0.5rem;
   }
 
   .ticket-clipboard-summary .timeline-body {
     margin: 0;
-    color: #f8fafc;
+    color: var(--clipboard-text, #0f172a);
   }
 
   .ticket-clipboard-summary .timeline-body strong {
-    color: #f8fafc;
+    color: var(--clipboard-text, #0f172a);
   }
 </style>
 {% endif %}
