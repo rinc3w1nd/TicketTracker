@@ -138,8 +138,6 @@ TicketTracker is distributed under the [MIT License](LICENSE). You may use, copy
 
 If TicketTracker makes your day-to-day work easier and you’d like to say thanks, you can optionally send a tip using any of the wallets below. Every contribution goes right back into the coffee and gadgets fund.
 
-coffee.)
-
 |   | Coin | Address |
 |---|------|---------|
 | <img src="static/img/Bitcoin.svg" height="24"> | **Bitcoin** | `bc1qnj60jqgp5uwu8uek843jxqlg7s5a05vlvatsw7` |
