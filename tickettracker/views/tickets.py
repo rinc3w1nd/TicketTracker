@@ -670,6 +670,7 @@ def add_update(ticket_id: int):
     config = _app_config()
     compact_mode = _is_compact_mode()
 
+    attachments = request.files.getlist("attachments")
     message = request.form.get("message", "").strip()
     submitted_by = (request.form.get("submitted_by") or "").strip()
     author = submitted_by or config.default_submitted_by
@@ -677,6 +678,13 @@ def add_update(ticket_id: int):
     hold_reason = request.form.get("on_hold_reason") or None
     raw_re_age = request.form.get("reage_ticket")
     re_age_requested = (raw_re_age or "").lower() in {"1", "true", "yes", "on"}
+    auto_attachment_raw = request.form.get("auto_attachment")
+    auto_attachment = (auto_attachment_raw or "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
 
     previous_status = ticket.status
     if new_status != ticket.status:
@@ -688,16 +696,23 @@ def add_update(ticket_id: int):
     if message:
         update = ticket.add_update(message, author=author)
     else:
-        update = None
+        filenames = [
+            upload.filename
+            for upload in attachments
+            if upload and upload.filename
+        ]
+        if filenames and auto_attachment:
+            summary = ", ".join(filenames)
+            attachment_body = f"Added attachment(s): {summary}"
+            update = ticket.add_update(attachment_body, author=author)
+        else:
+            update = None
 
     db.session.flush()
     if not ticket.due_date and re_age_requested:
         ticket.age_reference_date = datetime.utcnow().date()
 
-    if update:
-        _store_attachments(request.files.getlist("attachments"), ticket, update=update)
-    else:
-        _store_attachments(request.files.getlist("attachments"), ticket)
+    _store_attachments(attachments, ticket, update=update)
 
     db.session.commit()
     flash("Update added", "success")
