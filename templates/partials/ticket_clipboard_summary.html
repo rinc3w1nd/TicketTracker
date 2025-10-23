@@ -19,6 +19,8 @@
 {% set timeline_border = 'rgba(148, 163, 184, 0.28)' %}
 {% set article_background = "linear-gradient(160deg, rgba(248, 250, 252, 0.98) 0%, rgba(241, 245, 249, 0.96) 55%, rgba(226, 232, 240, 0.94) 100%), linear-gradient(120deg, " ~ tint_color ~ " 0%, rgba(248, 250, 252, 0) 70%)" %}
 {% set tag_text_color = config.colors.tags.get('text', '#e2e8f0') %}
+{% set raw_summary_id = ticket.id if ticket.id is not none else 'preview' %}
+{% set summary_identifier = ('ticket-' ~ raw_summary_id)|replace(' ', '-')|replace('"', '')|replace("'", '') %}
 {% set article_properties = [
   '--ticket-accent: ' ~ accent_color,
   '--ticket-tint: ' ~ tint_color,
@@ -71,6 +73,25 @@
 {% set status_note_style = "margin-left: 8px; font-size: 12px; color: " ~ muted_color ~ "; letter-spacing: 0.03em;" if use_inline_styles else "" %}
 {% set inline_hint_style = "margin-left: 8px; font-size: 12px; color: " ~ muted_color ~ "; letter-spacing: 0.03em;" if use_inline_styles else "" %}
 {% set tag_list_style = "list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px;" if use_inline_styles else "" %}
+{% set tag_contexts = namespace(items=[]) %}
+{% if ticket.tags %}
+  {% for tag in ticket.tags %}
+    {% set tag_background = tag.color or config.colors.tags.get('background', '#1e293b') %}
+    {% set tag_text = (tag.text_color if tag.text_color is defined and tag.text_color) or tag_text_color %}
+    {% set tag_variable_style = '--tag-color: ' ~ tag_background ~ '; --tag-text: ' ~ tag_text ~ ';' %}
+    {% set tag_style_value = tag_variable_style + (
+      ' ' + badge_base_style + ' background: ' + tag_background + '; color: ' + tag_text + '; padding: 6px 14px; font-size: 12px; letter-spacing: 0.04em; text-transform: none;'
+      if badge_base_style else
+      ' display: inline-flex; align-items: center; justify-content: center; padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 600; text-transform: none; letter-spacing: 0.04em; white-space: nowrap; box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12); border: 1px solid rgba(148, 163, 184, 0.35); background: ' + tag_background + '; color: ' + tag_text + ';'
+    ) %}
+    {% set _ = tag_contexts.items.append({
+      'tag': tag,
+      'variable_style': tag_variable_style,
+      'style_value': tag_style_value,
+    }) %}
+  {% endfor %}
+{% endif %}
+{% set tag_entries = tag_contexts.items %}
 {% set timeline_style = "list-style: none; margin: 20px 0 0; padding: 0 0 0 20px; border-left: 2px solid " ~ timeline_border ~ "; display: grid; gap: 20px;" if use_inline_styles else "" %}
 {% set timeline_item_style = "position: relative; padding-left: 24px;" if use_inline_styles else "" %}
 {% set timeline_marker_style = "position: absolute; left: -12px; top: 8px; width: 10px; height: 10px; border-radius: 50%; background: " ~ accent_color ~ "; box-shadow: 0 0 0 6px rgba(56, 189, 248, 0.18);" if use_inline_styles else "" %}
@@ -78,7 +99,8 @@
 {% set timeline_meta_style = "display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: " ~ muted_color ~ "; margin: 0 0 6px;" if use_inline_styles else "" %}
 {% set timeline_body_style = "margin: 0 0 6px 0; color: " ~ text_color ~ ";" if use_inline_styles else "" %}
 {% set timeline_body_last_style = "margin: 0; color: " ~ text_color ~ ";" if use_inline_styles else "" %}
-{% if not use_inline_styles %}
+{% set article_property_rules = article_properties | join(';
+    ') %}
 <style>
   .ticket-clipboard-summary {
     font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
@@ -316,9 +338,18 @@
   .ticket-clipboard-summary .timeline-body strong {
     color: var(--clipboard-text, #0f172a);
   }
-</style>
+{% if article_property_rules %}
+  .ticket-clipboard-summary[data-summary-id="{{ summary_identifier }}"] {
+    {{ article_property_rules }};
+  }
 {% endif %}
-<article class="ticket-clipboard-summary" data-clipboard-summary="ticket"{% if article_style %} style="{{ article_style }}"{% endif %}>
+{% for tag_entry in tag_entries %}
+  .ticket-clipboard-summary[data-summary-id="{{ summary_identifier }}"] .tag-badge[data-tag-index="{{ loop.index0 }}"] {
+    {{ tag_entry.variable_style }}
+  }
+{% endfor %}
+</style>
+<article class="ticket-clipboard-summary" data-summary-id="{{ summary_identifier }}" data-clipboard-summary="ticket"{% if article_style %} style="{{ article_style }}"{% endif %}>
   {% call with_section('header', sections) %}
     <header class="summary-header" data-clipboard-section="header"{% if header_style %} style="{{ header_style }}"{% endif %}>
       <div class="summary-title-group"{% if title_group_style %} style="{{ title_group_style }}"{% endif %}>
@@ -452,17 +483,9 @@
       <section class="summary-section" data-clipboard-section="tags"{% if section_style %} style="{{ section_style }}"{% endif %}>
         <h2{% if section_heading_style %} style="{{ section_heading_style }}"{% endif %}>Tags</h2>
         <ul class="summary-tags"{% if tag_list_style %} style="{{ tag_list_style }}"{% endif %}>
-          {% for tag in ticket.tags %}
-            {% set tag_background = tag.color or config.colors.tags.get('background', '#1e293b') %}
-            {% set tag_text = (tag.text_color if tag.text_color is defined and tag.text_color) or tag_text_color %}
-            {% set tag_variable_style = '--tag-color: ' ~ tag_background ~ '; --tag-text: ' ~ tag_text ~ ';' %}
-            {% set tag_style_value = tag_variable_style + (
-              ' ' + badge_base_style + ' background: ' + tag_background + '; color: ' + tag_text + '; padding: 6px 14px; font-size: 12px; letter-spacing: 0.04em; text-transform: none;'
-              if badge_base_style else
-              ' display: inline-flex; align-items: center; justify-content: center; padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 600; text-transform: none; letter-spacing: 0.04em; white-space: nowrap; box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12); border: 1px solid rgba(148, 163, 184, 0.35); background: ' + tag_background + '; color: ' + tag_text + ';'
-            ) %}
-            <li class="badge tag-badge" style="{{ tag_style_value }}">
-              {{ tag.name }}
+          {% for tag_entry in tag_entries %}
+            <li class="badge tag-badge" data-tag-index="{{ loop.index0 }}" style="{{ tag_entry.style_value }}">
+              {{ tag_entry.tag.name }}
             </li>
           {% endfor %}
         </ul>
