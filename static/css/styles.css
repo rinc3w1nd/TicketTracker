@@ -855,6 +855,38 @@ body.compact .filter-fields .filter-actions {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
+.update-form .form-controls-row {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  align-items: end;
+}
+
+.update-form .form-controls-row > * {
+  min-width: 0;
+}
+
+.update-form .form-controls-row .form-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  align-self: end;
+  font-size: 0.95rem;
+  color: rgba(148, 163, 184, 0.9);
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.update-form .form-controls-row .form-checkbox input {
+  width: 1rem;
+  height: 1rem;
+}
+
+.update-form .form-controls-row .button {
+  align-self: end;
+  justify-self: end;
+}
+
 .field-group[data-hidden] {
   display: none;
 }
