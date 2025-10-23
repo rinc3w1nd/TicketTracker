@@ -54,24 +54,62 @@
         <span>Created {{ ticket.created_at.strftime('%b %d, %Y %H:%M') }}</span>
         <span>Updated {{ ticket.updated_at.strftime('%b %d, %Y %H:%M') }}</span>
       </div>
-      <div class="clipboard-control">
-        <button
-          type="button"
-          class="icon-button clipboard-button"
-          data-clipboard-button
-          aria-describedby="clipboard-status-{{ ticket.id }}"
-          title="Copy ticket summary"
-        >
-          <span class="icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
-              <path
-                d="M16 3H5a2 2 0 0 0-2 2v11h2V5h11V3zm3 4H9a2 2 0 0 0-2 2v12h12a2 2 0 0 0 2-2V7z"
-                fill="currentColor"
-              ></path>
-            </svg>
-          </span>
-          <span class="sr-only">Copy summary</span>
-        </button>
+      <div class="ticket-action-buttons">
+        <div class="ticket-action-bar">
+          <button
+            type="button"
+            class="icon-button clipboard-button"
+            data-clipboard-button
+            aria-describedby="clipboard-status-{{ ticket.id }}"
+            title="Copy ticket summary"
+          >
+            <span class="icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                <path
+                  d="M16 3H5a2 2 0 0 0-2 2v11h2V5h11V3zm3 4H9a2 2 0 0 0-2 2v12h12a2 2 0 0 0 2-2V7z"
+                  fill="currentColor"
+                ></path>
+              </svg>
+            </span>
+            <span class="sr-only">Copy summary</span>
+          </button>
+          <button
+            type="button"
+            class="icon-button quick-attach-button"
+            data-quick-attachment-trigger
+            aria-controls="quick-attachment-input"
+            title="Quick attach files"
+          >
+            <span class="icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                <path
+                  d="M16.5 6.5v8a4.5 4.5 0 1 1-9 0V5a3.5 3.5 0 0 1 7 0v9a2.5 2.5 0 1 1-5 0V6.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.7"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                ></path>
+              </svg>
+            </span>
+            <span class="sr-only">Quick attach files</span>
+          </button>
+          <a
+            class="icon-button edit-ticket-button"
+            href="{{ url_for('tickets.edit_ticket', ticket_id=ticket.id, compact=compact_value) }}"
+            title="Edit ticket"
+          >
+            <span class="icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                <path
+                  d="M4 16.75V20h3.25L17.81 9.44l-3.25-3.25L4 16.75zm15.71-9.04a1.004 1.004 0 0 0 0-1.42l-2-2a1.004 1.004 0 0 0-1.42 0l-1.83 1.83 3.25 3.25 2-1.66z"
+                  fill="currentColor"
+                ></path>
+              </svg>
+            </span>
+            <span class="sr-only">Edit ticket</span>
+          </a>
+        </div>
         <span
           class="clipboard-status"
           id="clipboard-status-{{ ticket.id }}"
@@ -126,14 +164,6 @@
           </div>
         {% endif %}
       </dl>
-      <div class="actions">
-        <a
-          class="button"
-          href="{{ url_for('tickets.edit_ticket', ticket_id=ticket.id, compact=compact_value) }}"
-        >
-          Edit ticket
-        </a>
-      </div>
     </aside>
   </section>
 
@@ -210,6 +240,22 @@
     enctype="multipart/form-data"
     class="update-form"
   >
+    <input
+      type="hidden"
+      name="auto_attachment"
+      value="0"
+      data-auto-attachment-flag
+    />
+    <input
+      type="file"
+      id="quick-attachment-input"
+      name="attachments"
+      multiple
+      hidden
+      data-quick-attachment-input
+      aria-hidden="true"
+      tabindex="-1"
+    />
     <div class="field-group">
       <label for="message">Message</label>
       <textarea id="message" name="message" rows="4" placeholder="Share progress, blockers, or notes"></textarea>
@@ -346,4 +392,5 @@
 {% block scripts %}
   {{ super() }}
   <script type="module" src="{{ url_for('static', filename='js/clipboard.js') }}"></script>
+  <script type="module" src="{{ url_for('static', filename='js/ticket_detail.js') }}"></script>
 {% endblock %}

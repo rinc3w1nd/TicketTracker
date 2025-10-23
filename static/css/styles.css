@@ -957,6 +957,37 @@ body.compact .filter-fields .filter-actions {
   gap: 0.75rem;
 }
 
+.ticket-action-buttons {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.4rem;
+}
+
+.ticket-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.45rem;
+}
+
+.ticket-action-buttons .icon-button:not(.clipboard-button) {
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(15, 23, 42, 0.35);
+  color: var(--text-muted);
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.ticket-action-buttons .icon-button:not(.clipboard-button):hover,
+.ticket-action-buttons .icon-button:not(.clipboard-button):focus-visible {
+  color: #f8fafc;
+  border-color: rgba(56, 189, 248, 0.6);
+  background: rgba(56, 189, 248, 0.22);
+  transform: translateY(-1px);
+  text-decoration: none;
+}
+
 .clipboard-control {
   display: flex;
   flex-direction: column;
@@ -1410,6 +1441,18 @@ body.compact .filter-fields .filter-actions {
 
   .ticket-card .timestamps,
   .ticket-detail .timestamps {
+    text-align: left;
+  }
+
+  .ticket-detail .ticket-action-buttons {
+    align-items: flex-start;
+  }
+
+  .ticket-detail .ticket-action-bar {
+    justify-content: flex-start;
+  }
+
+  .ticket-detail .ticket-action-buttons .clipboard-status {
     text-align: left;
   }
 }
