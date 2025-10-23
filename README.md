@@ -133,3 +133,19 @@ Enabling demo mode snapshots the current SQLite database and uploads directory i
 ## License
 
 TicketTracker is distributed under the [MIT License](LICENSE). You may use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the software, provided that the copyright notice and permission notice are included in all copies or substantial portions of the software.
+
+### Support Development
+
+If TicketTracker makes your day-to-day work easier and you’d like to say thanks, you can optionally send a tip using any of the wallets below. Every contribution goes right back into the coffee and gadgets fund.
+
+| Cryptocurrency | Address |
+| --- | --- |
+| <img src="static/img/Bitcoin.svg" alt="Bitcoin logo" height="24"> **Bitcoin** | `bc1qnj60jqgp5uwu8uek843jxqlg7s5a05vlvatsw7` |
+| <img src="static/img/Ethereum.svg" alt="Ethereum logo" height="24"> **Ethereum** | `0x4c12c4439D10962c5d2d9B04CFA3246b2A399d58` |
+| <img src="static/img/Litecoin.svg" alt="Litecoin logo" height="24"> **Litecoin** | `ltc1q4metd98pvz6v0y4akr33rcq3pyana7sr97gjuu` |
+| <img src="static/img/Dogecoin.svg" alt="Dogecoin logo" height="24"> **Dogecoin** | `D6iYuzD6moPusdciMBQRfyryxNJsmiVtRH` |
+| <img src="static/img/Shiba-Inu.svg" alt="Shiba Inu logo" height="24"> **Shiba Inu** | `0x4c12c4439D10962c5d2d9B04CFA3246b2A399d58` |
+| <img src="static/img/xrp.svg" alt="XRP logo" height="24"> **XRP** | `rhB3NffCBbrAVkdAVFsVQWHa3NBJLKXaf1` |
+| <img src="static/img/Monero.svg" alt="Monero logo" height="24"> **Monero** | `4BAMFNn71DhZTd2G6kmESPG7n3sG9pW4bWsKAZaKjZ67EMnTuJqJW1DH1cr1scZxP57BQshpEr2fz5KKSP4K3ScvRkH7N8S` |
+
+> Tips are always appreciated but never expected—they don’t grant special access, support guarantees, or priority handling.
