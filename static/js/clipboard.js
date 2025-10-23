@@ -143,7 +143,27 @@ if (buttons.length) {
     return success;
   };
 
-  const showFallback = (fallbackEl, text) => {
+  const updateFallbackPreview = (fallbackEl, html, text) => {
+    if (!fallbackEl) {
+      return;
+    }
+    const preview = fallbackEl.querySelector('[data-clipboard-preview]');
+    if (!preview) {
+      return;
+    }
+    if (html) {
+      preview.innerHTML = html;
+      preview.classList.remove('is-plain');
+    } else if (text) {
+      preview.textContent = text;
+      preview.classList.add('is-plain');
+    } else {
+      preview.textContent = 'Summary unavailable.';
+      preview.classList.add('is-plain');
+    }
+  };
+
+  const showFallback = (fallbackEl, text, html) => {
     if (!fallbackEl) {
       return false;
     }
@@ -152,6 +172,7 @@ if (buttons.length) {
       return false;
     }
     fallbackEl.hidden = false;
+    updateFallbackPreview(fallbackEl, html, text);
     textarea.value = text;
     textarea.focus();
     textarea.select();
@@ -250,7 +271,7 @@ if (buttons.length) {
         return;
       }
 
-      const fallbackShown = showFallback(fallbackEl, fallbackText);
+      const fallbackShown = showFallback(fallbackEl, fallbackText, htmlContent);
       statusState.fallbackShown = fallbackShown;
       if (fallbackShown) {
         setStatus(

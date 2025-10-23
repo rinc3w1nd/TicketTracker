@@ -123,11 +123,21 @@
 
   <div class="clipboard-fallback" data-clipboard-fallback hidden>
     <p>Clipboard access isn't available. Select and copy the summary below.</p>
-    <textarea
-      class="clipboard-fallback-text"
-      data-clipboard-textarea
-      readonly
-    >{{- ticket.clipboard_summary.text | e -}}</textarea>
+    <div class="clipboard-preview" data-clipboard-preview></div>
+    <div class="clipboard-fallback-manual">
+      <label
+        class="clipboard-fallback-label"
+        for="clipboard-fallback-text-{{ ticket.id }}"
+      >
+        Plain text summary
+      </label>
+      <textarea
+        id="clipboard-fallback-text-{{ ticket.id }}"
+        class="clipboard-fallback-text"
+        data-clipboard-textarea
+        readonly
+      >{{- ticket.clipboard_summary.text | e -}}</textarea>
+    </div>
   </div>
   <template data-clipboard-html>{{ ticket.clipboard_summary.html|safe }}</template>
   <template data-clipboard-text>{{- ticket.clipboard_summary.text -}}</template>
