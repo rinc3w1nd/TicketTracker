@@ -4,12 +4,13 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
+from urllib.parse import parse_qs, urlparse
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from flask import current_app
+from flask import current_app, url_for
 
 from tickettracker.app import create_app
 from tickettracker.config import DEFAULT_CONFIG, load_config
@@ -39,6 +40,7 @@ def test_load_config_records_source_path(tmp_path):
     assert payload["clipboard_summary"]["text_sections"][1] == "timestamps"
     assert payload["clipboard_summary"]["debug_status"] is False
     assert payload["clipboard_summary"]["inline_styles"] is False
+    assert payload["behavior"]["auto_return_to_list"] is False
 
 
 def test_settings_update_persists_between_app_starts(tmp_path):
@@ -89,11 +91,13 @@ def test_settings_update_persists_between_app_starts(tmp_path):
     assert persisted["clipboard_summary"]["debug_status"] is False
     assert persisted["clipboard_summary"].get("inline_styles") is False
     assert persisted["demo_mode"] is True
+    assert persisted["behavior"]["auto_return_to_list"] is False
 
     with app.app_context():
         updated_config = current_app.config["APP_CONFIG"]
         assert updated_config.demo_mode is True
         assert updated_config.priorities == ["Low", "Medium", "High", "Urgent"]
+        assert updated_config.behavior.auto_return_to_list is False
         assert current_app.config["DEMO_MODE"] is True
 
     new_app = create_app(config_path)
@@ -115,6 +119,7 @@ def test_settings_update_persists_between_app_starts(tmp_path):
         ]
         assert reloaded_config.clipboard_summary.updates_limit == 3
         assert reloaded_config.clipboard_summary.debug_status is False
+        assert reloaded_config.behavior.auto_return_to_list is False
 
 
 def test_clipboard_debug_toggle_round_trip(tmp_path):
@@ -142,8 +147,56 @@ def test_clipboard_debug_toggle_round_trip(tmp_path):
 
     persisted = json.loads(config_path.read_text())
     assert persisted["clipboard_summary"]["debug_status"] is True
+    assert persisted["behavior"]["auto_return_to_list"] is False
 
     reloaded_app = create_app(config_path)
     with reloaded_app.app_context():
         reloaded_config = current_app.config["APP_CONFIG"]
         assert reloaded_config.clipboard_summary.debug_status is True
+        assert reloaded_config.behavior.auto_return_to_list is False
+
+
+def test_settings_redirects_to_list_when_auto_return_enabled(tmp_path):
+    config_data = _default_config()
+    config_path = _write_config(tmp_path / "config.json", config_data)
+
+    app = create_app(config_path)
+    client = app.test_client()
+
+    response = client.post(
+        "/settings?compact=0",
+        data={
+            "default_submitted_by": config_data["default_submitted_by"],
+            "priorities": "\n".join(config_data["priorities"]),
+            "hold_reasons": "\n".join(config_data["hold_reasons"]),
+            "workflow": "\n".join(config_data["workflow"]),
+            "html_sections": "\n".join(
+                config_data["clipboard_summary"]["html_sections"]
+            ),
+            "text_sections": "\n".join(
+                config_data["clipboard_summary"]["text_sections"]
+            ),
+            "updates_limit": str(
+                config_data["clipboard_summary"]["updates_limit"]
+            ),
+            "auto_return_to_list": "on",
+        },
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 302
+    redirect_url = urlparse(response.headers["Location"])
+
+    with app.test_request_context():
+        expected_path = url_for("tickets.list_tickets")
+
+    assert redirect_url.path == expected_path
+    assert parse_qs(redirect_url.query).get("compact") == ["0"]
+
+    persisted = json.loads(config_path.read_text())
+    assert persisted["behavior"]["auto_return_to_list"] is True
+
+    reloaded_app = create_app(config_path)
+    with reloaded_app.app_context():
+        reloaded_config = current_app.config["APP_CONFIG"]
+        assert reloaded_config.behavior.auto_return_to_list is True

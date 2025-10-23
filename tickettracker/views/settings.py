@@ -104,6 +104,7 @@ def _form_defaults(config: AppConfig) -> Dict[str, object]:
         "updates_limit": str(config.clipboard_summary.updates_limit),
         "clipboard_debug_status": config.clipboard_summary.debug_status,
         "demo_mode": config.demo_mode,
+        "auto_return_to_list": config.behavior.auto_return_to_list,
     }
 
 
@@ -125,6 +126,9 @@ def view_settings():
         updates_limit_input = request.form.get("updates_limit", "").strip()
         debug_status_enabled = request.form.get("clipboard_debug_status") is not None
         demo_mode_enabled = request.form.get("demo_mode") is not None
+        auto_return_to_list_enabled = (
+            request.form.get("auto_return_to_list") is not None
+        )
 
         form_data = {
             "default_submitted_by": default_submitted_by,
@@ -136,6 +140,7 @@ def view_settings():
             "updates_limit": updates_limit_input,
             "clipboard_debug_status": debug_status_enabled,
             "demo_mode": demo_mode_enabled,
+            "auto_return_to_list": auto_return_to_list_enabled,
         }
 
         errors: List[str] = []
@@ -189,6 +194,11 @@ def view_settings():
                 debug_status=debug_status_enabled,
             )
 
+            behavior_settings = replace(
+                config.behavior,
+                auto_return_to_list=auto_return_to_list_enabled,
+            )
+
             updated_config = replace(
                 config,
                 default_submitted_by=default_submitted_by,
@@ -196,6 +206,7 @@ def view_settings():
                 hold_reasons=hold_reasons,
                 workflow=workflow,
                 clipboard_summary=summary,
+                behavior=behavior_settings,
                 demo_mode=demo_mode_enabled,
             )
 
@@ -218,6 +229,13 @@ def view_settings():
             else:
                 if _persist_config(updated_config):
                     flash("Settings updated", "success")
+                    if updated_config.behavior.auto_return_to_list:
+                        return redirect(
+                            url_for(
+                                "tickets.list_tickets",
+                                compact=_compact_query_value(compact_mode),
+                            )
+                        )
                     return redirect(
                         url_for(
                             "settings.view_settings",

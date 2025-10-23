@@ -675,11 +675,16 @@ def edit_ticket(ticket_id: int):
         _store_attachments(request.files.getlist("attachments"), ticket)
         db.session.commit()
         flash("Ticket updated", "success")
+        compact_value = _compact_query_value(compact_mode)
+        if config.behavior.auto_return_to_list:
+            return redirect(
+                url_for("tickets.list_tickets", compact=compact_value)
+            )
         return redirect(
             url_for(
                 "tickets.ticket_detail",
                 ticket_id=ticket.id,
-                compact=_compact_query_value(compact_mode),
+                compact=compact_value,
             )
         )
 
@@ -749,11 +754,14 @@ def add_update(ticket_id: int):
 
     db.session.commit()
     flash("Update added", "success")
+    compact_value = _compact_query_value(compact_mode)
+    if config.behavior.auto_return_to_list:
+        return redirect(url_for("tickets.list_tickets", compact=compact_value))
     return redirect(
         url_for(
             "tickets.ticket_detail",
             ticket_id=ticket.id,
-            compact=_compact_query_value(compact_mode),
+            compact=compact_value,
         )
     )
 

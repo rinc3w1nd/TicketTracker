@@ -120,6 +120,21 @@
       </div>
 
       <div class="field-group checkbox">
+        <label class="checkbox-label" for="auto_return_to_list">
+          <input
+            type="checkbox"
+            id="auto_return_to_list"
+            name="auto_return_to_list"
+            {% if form.auto_return_to_list %}checked{% endif %}
+          />
+          <span>Return to the ticket list after saving</span>
+        </label>
+        <p class="help">
+          When enabled, saving ticket updates or settings navigates back to the ticket list view.
+        </p>
+      </div>
+
+      <div class="field-group checkbox">
         <label class="checkbox-label" for="demo_mode">
           <input
             type="checkbox"

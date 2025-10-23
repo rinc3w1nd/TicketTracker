@@ -56,6 +56,10 @@ DEFAULT_CLIPBOARD_SUMMARY: Dict[str, Any] = {
     "inline_styles": False,
 }
 
+DEFAULT_BEHAVIOR_CONFIG: Dict[str, Any] = {
+    "auto_return_to_list": False,
+}
+
 
 DEFAULT_CONFIG: Dict[str, Any] = {
     "secret_key": DEFAULT_SECRET_KEY,
@@ -98,6 +102,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         },
     },
     "clipboard_summary": DEFAULT_CLIPBOARD_SUMMARY,
+    "behavior": dict(DEFAULT_BEHAVIOR_CONFIG),
     "demo_mode": False,
 }
 
@@ -256,6 +261,18 @@ class ClipboardSummaryConfig:
 
 
 @dataclass
+class BehaviorConfig:
+    """Configuration for post-action navigation behavior."""
+
+    auto_return_to_list: bool = False
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Return a JSON-serializable representation of behavior settings."""
+
+        return {"auto_return_to_list": bool(self.auto_return_to_list)}
+
+
+@dataclass
 class AppConfig:
     """Runtime configuration for the TicketTracker application."""
 
@@ -269,6 +286,7 @@ class AppConfig:
     sla: SLAConfig
     colors: ColorConfig
     clipboard_summary: ClipboardSummaryConfig
+    behavior: BehaviorConfig
     demo_mode: bool = False
     source_path: Optional[Path] = None
 
@@ -290,6 +308,7 @@ class AppConfig:
             "sla": self.sla.to_dict(),
             "colors": self.colors.to_dict(),
             "clipboard_summary": self.clipboard_summary.to_dict(),
+            "behavior": self.behavior.to_dict(),
             "demo_mode": bool(self.demo_mode),
         }
 
@@ -491,6 +510,7 @@ def load_config(config_path: Optional[os.PathLike[str] | str] = None) -> AppConf
     sla_config = merged.get("sla", {})
     colors_config = merged.get("colors", {})
     clipboard_summary_config = merged.get("clipboard_summary", {})
+    behavior_config = merged.get("behavior", {})
 
     raw_due_stage_days = sla_config.get("due_stage_days", [])
     due_stage_days: List[int] = []
@@ -584,6 +604,15 @@ def load_config(config_path: Optional[os.PathLike[str] | str] = None) -> AppConf
 
     demo_mode = _coerce_bool(merged.get("demo_mode"), default=False)
 
+    if not isinstance(behavior_config, Mapping):
+        behavior_config = {}
+
+    auto_return_to_list = _coerce_bool(
+        behavior_config.get("auto_return_to_list"),
+        default=bool(DEFAULT_BEHAVIOR_CONFIG.get("auto_return_to_list", False)),
+    )
+    behavior = BehaviorConfig(auto_return_to_list=auto_return_to_list)
+
     return AppConfig(
         secret_key=secret_key,
         database_uri=database_uri,
@@ -605,6 +634,7 @@ def load_config(config_path: Optional[os.PathLike[str] | str] = None) -> AppConf
             ticket_title=ticket_title_color,
         ),
         clipboard_summary=clipboard_summary,
+        behavior=behavior,
         demo_mode=demo_mode,
         source_path=source_path,
     )
