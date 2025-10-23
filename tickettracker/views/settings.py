@@ -16,6 +16,7 @@ from flask import (
 
 from ..config import AppConfig, save_config
 from ..demo import DemoModeError, get_demo_manager
+from ..summary import CLIPBOARD_SUMMARY_SECTION_DESCRIPTIONS
 
 
 settings_bp = Blueprint("settings", __name__)
@@ -246,6 +247,7 @@ def view_settings():
         compact_toggle_url=_build_compact_toggle_url(
             "settings.view_settings", compact_mode
         ),
+        clipboard_sections=CLIPBOARD_SUMMARY_SECTION_DESCRIPTIONS,
     )
 
 

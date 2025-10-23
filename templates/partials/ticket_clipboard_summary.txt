@@ -1,9 +1,11 @@
+{% from "partials/_clipboard_summary_macros.html" import format_timestamp %}
 {% if 'header' in sections %}
-Ticket #{{ ticket.id }} · {{ ticket.title }}
-Created: {{ ticket.created_at.strftime('%b %d, %Y %H:%M') if ticket.created_at else '—' }}
-Updated: {{ ticket.updated_at.strftime('%b %d, %Y %H:%M') if ticket.updated_at else '—' }}
-{% if ticket_url %}Link: {{ ticket_url }}
+{{ ticket.title }}
+
 {% endif %}
+{% if 'timestamps' in sections %}
+Created: {{ format_timestamp(ticket.created_at) }}
+Updated: {{ format_timestamp(ticket.updated_at) }}
 
 {% endif %}
 {% if 'meta' in sections %}
@@ -45,7 +47,7 @@ Tags: {{ ticket.tags|map(attribute='name')|join(', ') }}
 {% endif %}
 {% if 'updates' in sections and updates %}
 Recent Updates:
-{% for update in updates %}- {{ update.created_at.strftime('%b %d, %Y %H:%M') }} by {{ 'System' if update.is_system else (update.author or config.default_submitted_by) }}
+{% for update in updates %}- {{ format_timestamp(update.created_at) }} by {{ 'System' if update.is_system else (update.author or config.default_submitted_by) }}
 {% if update.status_from or update.status_to %}  Status: {{ update.status_from or '—' }} → {{ update.status_to or '—' }}
 {% endif %}{% for line in update.body.splitlines() %}
   {{ line }}

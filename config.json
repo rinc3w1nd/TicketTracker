@@ -54,6 +54,7 @@
   "clipboard_summary": {
     "html_sections": [
       "header",
+      "timestamps",
       "meta",
       "people",
       "description",
@@ -64,6 +65,7 @@
     ],
     "text_sections": [
       "header",
+      "timestamps",
       "meta",
       "people",
       "description",

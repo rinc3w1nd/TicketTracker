@@ -89,6 +89,20 @@ The gradient palette exposes five keys—`stage0`, `stage1`, `stage2`, `stage3`,
 
 You can provide a different configuration by setting `TICKETTRACKER_CONFIG` to an alternate JSON file path before starting the app.
 
+Clipboard exports are driven by the `clipboard_summary` section. Both `html_sections` and `text_sections` accept ordered lists of section names, allowing you to reorder or omit parts of the ticket summary. Available sections include:
+
+- `header` – Renders the ticket title as the clipboard heading.
+- `timestamps` – Shows when the ticket was created and last updated.
+- `meta` – Lists status, priority, due date, and SLA countdown details.
+- `people` – Summarises the requester and watchers.
+- `description` – Outputs the ticket description field.
+- `links` – Copies reference links supplied on the ticket.
+- `notes` – Copies the internal notes field.
+- `tags` – Lists tag names associated with the ticket.
+- `updates` – Includes the most recent ticket updates up to the configured limit.
+
+The `updates_limit` value controls how many timeline entries are included when the `updates` section is enabled. Leaving `text_sections` empty instructs the app to reuse the HTML section list for the plain-text export. Removing the `timestamps` section omits created/updated lines from the summaries.
+
 ### Running the development server
 ```bash
 flask --app tickettracker.app:create_app run --debug
