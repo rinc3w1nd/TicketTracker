@@ -17,7 +17,12 @@
   <body class="{% if is_compact %}compact{% endif %}">
     <header class="app-header">
       <div class="brand">
-        <span class="logo">🎫</span>
+        <span class="logo">
+          <img
+            src="{{ url_for('static', filename='img/ticket_stopwatch.svg') }}"
+            alt="TicketTracker logo featuring a ticket with a stopwatch"
+          />
+        </span>
         <div>
           <h1>TicketTracker</h1>
           <p class="subtitle">Local-first ticketing desk</p>
