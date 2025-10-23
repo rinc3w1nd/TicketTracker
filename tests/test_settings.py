@@ -146,6 +146,7 @@ def test_settings_update_persists_between_app_starts(tmp_path):
                 ("text_sections", "updates"),
                 ("updates_limit", "3"),
                 ("demo_mode", "on"),
+                ("auto_return_to_list", "on"),
             ]
         ),
         follow_redirects=True,

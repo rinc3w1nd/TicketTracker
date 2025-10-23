@@ -142,11 +142,16 @@ class SLAConfig:
     default_due_days: Optional[int] = DEFAULT_BACKLOG_DUE_DAYS
 
     def due_thresholds(self) -> List[int]:
-        """Return descending day thresholds for due-date staging."""
+        """Return ascending day thresholds for due-date staging."""
 
         thresholds = [day for day in self.due_stage_days if isinstance(day, int)]
-        thresholds.sort(reverse=True)
-        return thresholds or list(DEFAULT_DUE_STAGE_DAYS)
+        thresholds.sort()
+        if thresholds:
+            return thresholds
+
+        fallback = [day for day in DEFAULT_DUE_STAGE_DAYS if isinstance(day, int)]
+        fallback.sort()
+        return fallback
 
     def priority_thresholds(self, priority: str) -> List[int]:
         """Return ascending day thresholds for backlog staging by priority."""
