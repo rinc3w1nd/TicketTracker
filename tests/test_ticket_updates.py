@@ -229,6 +229,30 @@ def test_add_update_redirects_to_list_when_enabled(make_app_with_ticket):
     assert parse_qs(location.query).get("compact") == ["1"]
 
 
+def test_add_update_with_attachments_stays_on_detail_when_auto_return_enabled(
+    make_app_with_ticket,
+):
+    app, _, ticket_id = make_app_with_ticket(auto_return_to_list=True)
+    client = app.test_client()
+
+    response = client.post(
+        f"/tickets/{ticket_id}/updates",
+        data={
+            "message": "",
+            "submitted_by": "",
+            "status": "Open",
+            "attachments": [(io.BytesIO(b"payload"), "note.txt")],
+        },
+        content_type="multipart/form-data",
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 302
+    location = urlparse(response.headers["Location"])
+    assert location.path == f"/tickets/{ticket_id}"
+    assert parse_qs(location.query).get("compact") == ["1"]
+
+
 def test_edit_ticket_redirects_to_detail_by_default(make_app_with_ticket):
     app, _, ticket_id = make_app_with_ticket()
     client = app.test_client()
@@ -258,6 +282,28 @@ def test_edit_ticket_redirects_to_list_when_enabled(make_app_with_ticket):
     assert response.status_code == 302
     location = urlparse(response.headers["Location"])
     assert location.path == "/"
+    assert parse_qs(location.query).get("compact") == ["1"]
+
+
+def test_edit_ticket_with_attachments_stays_on_detail_when_auto_return_enabled(
+    make_app_with_ticket,
+):
+    app, _, ticket_id = make_app_with_ticket(auto_return_to_list=True)
+    client = app.test_client()
+
+    response = client.post(
+        f"/tickets/{ticket_id}/edit",
+        data={
+            "title": "Updated title",
+            "attachments": [(io.BytesIO(b"payload"), "note.txt")],
+        },
+        content_type="multipart/form-data",
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 302
+    location = urlparse(response.headers["Location"])
+    assert location.path == f"/tickets/{ticket_id}"
     assert parse_qs(location.query).get("compact") == ["1"]
 
 

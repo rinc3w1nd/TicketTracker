@@ -827,6 +827,11 @@ def edit_ticket(ticket_id: int):
 
         ticket.set_tags(_parse_tags(request.form.get("tags")))
 
+        attachments = request.files.getlist("attachments")
+        has_new_attachments = any(
+            upload and upload.filename for upload in attachments
+        )
+
         if ticket.status != previous_status:
             message = f"Status changed from {previous_status} to {ticket.status}"
             ticket.add_update(
@@ -839,12 +844,12 @@ def edit_ticket(ticket_id: int):
                 ticket.on_hold_reason = None
 
         db.session.flush()
-        _store_attachments(request.files.getlist("attachments"), ticket)
+        _store_attachments(attachments, ticket)
         db.session.commit()
         flash("Ticket updated", "success")
         redirect_endpoint = (
             "tickets.list_tickets"
-            if config.auto_return_to_list
+            if config.auto_return_to_list and not has_new_attachments
             else "tickets.ticket_detail"
         )
         redirect_kwargs = {"compact": _compact_query_value(compact_mode)}
@@ -873,6 +878,9 @@ def add_update(ticket_id: int):
     compact_mode = _is_compact_mode()
 
     attachments = request.files.getlist("attachments")
+    has_new_attachments = any(
+        upload and upload.filename for upload in attachments
+    )
     message = request.form.get("message", "").strip()
     submitted_by = (request.form.get("submitted_by") or "").strip()
     author = submitted_by or config.default_submitted_by
@@ -920,7 +928,7 @@ def add_update(ticket_id: int):
     flash("Update added", "success")
     redirect_endpoint = (
         "tickets.list_tickets"
-        if config.auto_return_to_list
+        if config.auto_return_to_list and not has_new_attachments
         else "tickets.ticket_detail"
     )
     redirect_kwargs = {"compact": _compact_query_value(compact_mode)}
