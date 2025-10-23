@@ -252,6 +252,19 @@ body.compact .filter-collapsible {
   border-radius: 0.9rem;
 }
 
+body.compact .attachment-collapsible {
+  padding: 0.75rem 0.95rem;
+}
+
+body.compact .attachment-icon {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+body.compact .attachment-summary-count {
+  font-size: 0.75rem;
+}
+
 body.compact .filter-fields {
   gap: 0.75rem;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -593,6 +606,115 @@ body.compact .filter-fields .filter-actions {
   color: var(--accent);
   font-size: 0.75rem;
   line-height: 1;
+}
+
+.attachment-collapsible {
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: 1rem;
+  padding: 0.9rem 1.1rem;
+  background: rgba(15, 23, 42, 0.6);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.attachment-collapsible > summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  cursor: pointer;
+  font-weight: 600;
+  color: rgba(148, 163, 184, 0.85);
+  transition: color 0.2s ease;
+}
+
+.attachment-collapsible > summary::-webkit-details-marker {
+  display: none;
+}
+
+.attachment-collapsible > summary:focus-visible {
+  outline: 2px solid rgba(56, 189, 248, 0.6);
+  outline-offset: 4px;
+  border-radius: 0.75rem;
+}
+
+.attachment-collapsible > summary:hover {
+  color: #f8fafc;
+}
+
+.attachment-collapsible[open] > summary,
+.attachment-collapsible[data-has-files='true'] > summary {
+  color: #f8fafc;
+}
+
+.attachment-collapsible[open] {
+  border-color: rgba(56, 189, 248, 0.4);
+  box-shadow: 0 12px 32px rgba(2, 6, 23, 0.35);
+}
+
+.attachment-collapsible[data-has-files='true'] {
+  border-color: rgba(56, 189, 248, 0.35);
+}
+
+.attachment-toggle-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.attachment-toggle-state--open {
+  display: none;
+}
+
+.attachment-collapsible[open] .attachment-toggle-state--closed {
+  display: none;
+}
+
+.attachment-collapsible[open] .attachment-toggle-state--open {
+  display: inline;
+}
+
+.attachment-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.75rem;
+  background: rgba(56, 189, 248, 0.12);
+  color: rgba(56, 189, 248, 0.85);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.attachment-icon svg {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.attachment-summary-count {
+  margin-left: auto;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.attachment-collapsible[data-has-files='true'] .attachment-summary-count {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.attachment-fields {
+  margin-top: 1.1rem;
+}
+
+.attachment-fields .help {
+  margin: 0;
+}
+
+.help {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: 1.5;
 }
 
 .sr-only {
