@@ -17,7 +17,7 @@ from flask import (
     send_from_directory,
     url_for,
 )
-from sqlalchemy import or_
+from sqlalchemy import case, or_
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
@@ -435,8 +435,8 @@ def list_tickets():
         priority_mappings = [
             (priority, index) for index, priority in enumerate(config.priorities)
         ]
-        priority_case = db.case(
-            priority_mappings,
+        priority_case = case(
+            *priority_mappings,
             value=Ticket.priority,
             else_=len(config.priorities),
         )
