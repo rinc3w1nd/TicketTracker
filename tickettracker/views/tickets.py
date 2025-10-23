@@ -69,6 +69,8 @@ BASE_TINT_INTENSITY = 0.5
 # Overdue requests ask for a stronger overlay but remain capped inside the tint helper.
 OVERDUE_TINT_INTENSITY = 0.75
 
+_ANCHOR_TEXT_COLOR = "#0f172a"
+
 
 def _app_config() -> AppConfig:
     return current_app.config["APP_CONFIG"]
@@ -211,6 +213,99 @@ def _compute_ticket_tint(
     return _format_rgba(red, green, blue)
 
 
+def _parse_hex_color(value: str | None) -> tuple[int, int, int] | None:
+    """Return RGB components extracted from ``value`` if it is a hex color."""
+
+    if not value:
+        return None
+
+    value = value.strip()
+    if not value.startswith("#"):
+        return None
+
+    hex_value = value.lstrip("#")
+    if len(hex_value) == 3:
+        hex_value = "".join(component * 2 for component in hex_value)
+
+    if len(hex_value) != 6:
+        return None
+
+    try:
+        red = int(hex_value[0:2], 16)
+        green = int(hex_value[2:4], 16)
+        blue = int(hex_value[4:6], 16)
+    except ValueError:
+        return None
+
+    return red, green, blue
+
+
+def _format_hex_color(red: int, green: int, blue: int) -> str:
+    """Return a ``#RRGGBB`` color string from RGB components."""
+
+    clamped = (
+        max(0, min(255, int(round(component))))
+        for component in (red, green, blue)
+    )
+    return "#" + "".join(f"{component:02x}" for component in clamped)
+
+
+def _relative_luminance(red: int, green: int, blue: int) -> float:
+    """Return the WCAG relative luminance of an RGB color."""
+
+    def _channel(value: int) -> float:
+        normalized = value / 255.0
+        if normalized <= 0.03928:
+            return normalized / 12.92
+        return ((normalized + 0.055) / 1.055) ** 2.4
+
+    r = _channel(red)
+    g = _channel(green)
+    b = _channel(blue)
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+
+def _mix_rgb(
+    rgb: tuple[int, int, int],
+    anchor: tuple[int, int, int],
+    ratio: float,
+) -> tuple[int, int, int]:
+    """Blend ``rgb`` toward ``anchor`` by ``ratio``."""
+
+    normalized_ratio = max(0.0, min(1.0, ratio))
+    return tuple(
+        max(0, min(255, int(round(component * normalized_ratio + anchor_component * (1 - normalized_ratio)))))
+        for component, anchor_component in zip(rgb, anchor)
+    )
+
+
+def _derive_indicator_text_color(color: str | None, *, fallback: str = _ANCHOR_TEXT_COLOR) -> str:
+    """Return a text color with improved contrast for clipboard indicators."""
+
+    anchor_rgb = _parse_hex_color(fallback) or (15, 23, 42)
+    color_rgb = _parse_hex_color(color)
+    if color_rgb is None:
+        return fallback
+
+    luminance = _relative_luminance(*color_rgb)
+
+    if luminance >= 0.75:
+        mixed = _mix_rgb(color_rgb, anchor_rgb, 0.45)
+        return _format_hex_color(*mixed)
+
+    if luminance >= 0.55:
+        mixed = _mix_rgb(color_rgb, anchor_rgb, 0.6)
+        return _format_hex_color(*mixed)
+
+    if luminance <= 0.15:
+        highlight_rgb = (248, 250, 252)
+        mixed = _mix_rgb(color_rgb, highlight_rgb, 0.65)
+        return _format_hex_color(*mixed)
+
+    mixed = _mix_rgb(color_rgb, anchor_rgb, 0.7)
+    return _format_hex_color(*mixed)
+
+
 def _compute_backlog_remaining_days(
     ticket: Ticket, config: AppConfig, now: datetime
 ) -> float | None:
@@ -294,6 +389,29 @@ def _annotate_due_state(ticket: Ticket, config: AppConfig) -> None:
     ticket.due_badge_label = badge_label  # type: ignore[attr-defined]
     ticket.due_badge_state = badge_state  # type: ignore[attr-defined]
     ticket.due_badge_color = badge_color  # type: ignore[attr-defined]
+
+
+def _annotate_indicator_text_colors(
+    ticket: Ticket,
+    config: AppConfig,
+    status_palette: Dict[str, str] | None = None,
+) -> None:
+    """Attach text colors for clipboard value indicators."""
+
+    palette = status_palette or _build_status_palette(config)
+
+    status_color = getattr(ticket, "status_color", None) or _resolve_status_color(
+        ticket.status, palette
+    )
+    if not status_color:
+        status_color = ticket.display_color
+
+    priority_color = config.colors.priorities.get(ticket.priority, "#3b82f6")
+    due_color = getattr(ticket, "due_badge_color", None) or config.colors.gradient_stage_color(0)
+
+    ticket.status_text_color = _derive_indicator_text_color(status_color)  # type: ignore[attr-defined]
+    ticket.priority_text_color = _derive_indicator_text_color(priority_color)  # type: ignore[attr-defined]
+    ticket.due_text_color = _derive_indicator_text_color(due_color)  # type: ignore[attr-defined]
 
 
 @dataclass(frozen=True)
@@ -681,6 +799,7 @@ def list_tickets():
         )  # type: ignore[attr-defined]
         _annotate_ticket_sla(ticket, config, now)
         _annotate_due_state(ticket, config)
+        _annotate_indicator_text_colors(ticket, config, status_palette)
         ticket.compact_tooltip = _compose_compact_tooltip(ticket)  # type: ignore[attr-defined]
         ticket.clipboard_summary = build_ticket_clipboard_summary(  # type: ignore[attr-defined]
             ticket,
@@ -733,6 +852,7 @@ def ticket_detail(ticket_id: int):
     )  # type: ignore[attr-defined]
     _annotate_ticket_sla(ticket, config)
     _annotate_due_state(ticket, config)
+    _annotate_indicator_text_colors(ticket, config, status_palette)
     ticket.clipboard_summary = build_ticket_clipboard_summary(  # type: ignore[attr-defined]
         ticket,
         config,

@@ -6,8 +6,11 @@
 {% set tint_color = ticket.tint_color or 'rgba(56, 189, 248, 0.22)' %}
 {% set title_color = ticket_title_color|default('#0f172a') %}
 {% set status_color = ticket.status_color or accent_color %}
+{% set status_text_color = ticket.status_text_color|default(status_color) %}
 {% set priority_color = config.colors.priorities.get(ticket.priority, '#3b82f6') %}
+{% set priority_text_color = ticket.priority_text_color|default(priority_color) %}
 {% set due_color = ticket.due_badge_color or '#e2e8f0' %}
+{% set due_text_color = ticket.due_text_color|default(due_color) %}
 {% set muted_color = '#475569' %}
 {% set text_color = '#0f172a' %}
 {% set section_background = 'rgba(255, 255, 255, 0.86)' %}
@@ -29,8 +32,11 @@
   '--ticket-tint: ' ~ tint_color,
   '--ticket-title-color: ' ~ title_color,
   '--ticket-status-color: ' ~ status_color,
+  '--ticket-status-ink: ' ~ status_text_color,
   '--ticket-priority-color: ' ~ priority_color,
+  '--ticket-priority-ink: ' ~ priority_text_color,
   '--ticket-due-color: ' ~ due_color,
+  '--ticket-due-ink: ' ~ due_text_color,
   '--clipboard-text: ' ~ text_color,
   '--clipboard-muted: ' ~ muted_color,
   '--clipboard-surface: ' ~ section_background,
@@ -69,9 +75,10 @@
 {% set th_style = "padding: 5px 0; width: 32%; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: " ~ muted_color ~ "; vertical-align: top;" if use_inline_styles else "" %}
 {% set td_style = "padding: 5px 0; color: " ~ text_color ~ "; vertical-align: top;" if use_inline_styles else "" %}
 {% set badge_base_style = "display: inline-flex; align-items: center; justify-content: center; padding: 4px 12px; border-radius: 999px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12); border: 1px solid rgba(148, 163, 184, 0.35);" if use_inline_styles else "" %}
-{% set status_badge_style = badge_base_style + " background: " + status_color + "; color: #f8fafc;" if badge_base_style else "" %}
-{% set priority_badge_style = badge_base_style + " background: " + priority_color + "; color: #0f172a; box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.35), 0 8px 16px rgba(2, 6, 23, 0.35);" if badge_base_style else "" %}
-{% set due_badge_style_value = badge_base_style + " background: " + due_color + "; color: #f8fafc;" if badge_base_style else "" %}
+{% set value_indicator_base_style = "display: inline-block; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; line-height: 1.25;" if use_inline_styles else "" %}
+{% set status_value_style = value_indicator_base_style + " color: " + status_text_color + ";" if value_indicator_base_style else "" %}
+{% set priority_value_style = value_indicator_base_style + " color: " + priority_text_color + ";" if value_indicator_base_style else "" %}
+{% set due_value_style = value_indicator_base_style + " color: " + due_text_color + ";" if value_indicator_base_style else "" %}
 {% set sla_badge_style = badge_base_style + " background: rgba(56, 189, 248, 0.35); color: #f8fafc;" if badge_base_style else "" %}
 {% set status_note_style = "margin-left: 8px; font-size: 12px; color: " ~ muted_color ~ "; letter-spacing: 0.03em;" if use_inline_styles else "" %}
 {% set inline_hint_style = "margin-left: 8px; font-size: 12px; color: " ~ muted_color ~ "; letter-spacing: 0.03em;" if use_inline_styles else "" %}
@@ -237,20 +244,34 @@
     border: 1px solid rgba(148, 163, 184, 0.35);
   }
 
-  .ticket-clipboard-summary .status-badge {
-    background: var(--ticket-status-color, rgba(148, 163, 184, 0.28));
-    color: #f8fafc;
+  .ticket-clipboard-summary .value-indicator {
+    display: inline-block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    line-height: 1.25;
   }
 
-  .ticket-clipboard-summary .priority-badge {
-    background: var(--ticket-priority-color, rgba(148, 163, 184, 0.25));
-    color: #0f172a;
-    box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.35), 0 8px 16px rgba(2, 6, 23, 0.35);
+  .ticket-clipboard-summary .status-value {
+    color: var(
+      --ticket-status-ink,
+      var(--ticket-status-color, var(--ticket-accent, #0f172a))
+    );
   }
 
-  .ticket-clipboard-summary .due-badge {
-    background: var(--ticket-due-color, rgba(56, 189, 248, 0.35));
-    color: #f8fafc;
+  .ticket-clipboard-summary .priority-value {
+    color: var(
+      --ticket-priority-ink,
+      var(--ticket-priority-color, #0f172a)
+    );
+  }
+
+  .ticket-clipboard-summary .due-value {
+    color: var(
+      --ticket-due-ink,
+      var(--ticket-due-color, var(--ticket-accent, #0f172a))
+    );
   }
 
   .ticket-clipboard-summary .sla-badge {
@@ -418,7 +439,7 @@
           <tr>
             <th{% if th_style %} style="{{ th_style }}"{% endif %}>Status</th>
             <td{% if td_style %} style="{{ td_style }}"{% endif %}>
-              <span class="badge status-badge"{% if status_badge_style %} style="{{ status_badge_style }}"{% endif %}>{{ ticket.status }}</span>
+              <span class="value-indicator status-value"{% if status_value_style %} style="{{ status_value_style }}"{% endif %}>{{ ticket.status }}</span>
               {% if ticket.status == 'On Hold' and ticket.on_hold_reason %}
                 {% set hold_prefix = '• ' if use_inline_styles else '' %}
                 <span class="status-note"{% if status_note_style %} style="{{ status_note_style }}"{% endif %}>{{ hold_prefix }}{{ ticket.on_hold_reason }}</span>
@@ -428,13 +449,13 @@
           <tr>
             <th{% if th_style %} style="{{ th_style }}"{% endif %}>Priority</th>
             <td{% if td_style %} style="{{ td_style }}"{% endif %}>
-              <span class="badge priority-badge"{% if priority_badge_style %} style="{{ priority_badge_style }}"{% endif %}>{{ ticket.priority }}</span>
+              <span class="value-indicator priority-value"{% if priority_value_style %} style="{{ priority_value_style }}"{% endif %}>{{ ticket.priority }}</span>
             </td>
           </tr>
           <tr>
             <th{% if th_style %} style="{{ th_style }}"{% endif %}>Due</th>
             <td{% if td_style %} style="{{ td_style }}"{% endif %}>
-              <span class="badge due-badge"{% if due_badge_style_value %} style="{{ due_badge_style_value }}"{% endif %}>{{ ticket.due_badge_label }}</span>
+              <span class="value-indicator due-value"{% if due_value_style %} style="{{ due_value_style }}"{% endif %}>{{ ticket.due_badge_label }}</span>
               {% if not ticket.due_date and ticket.age_reference_date %}
                 <span class="age-badge"{% if inline_hint_style %} style="{{ inline_hint_style }}"{% endif %}>Aging since {{ ticket.age_reference_date.strftime('%b %d, %Y') }}</span>
               {% endif %}
