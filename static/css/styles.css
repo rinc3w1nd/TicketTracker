@@ -944,6 +944,9 @@ a:hover {
 
 .status-badge {
   --status-color: rgba(148, 163, 184, 0.25);
+  background: var(--status-color);
+  border-color: var(--status-color);
+  color: #f8fafc;
   background: color-mix(in srgb, var(--status-color) 45%, transparent);
   border-color: color-mix(in srgb, var(--status-color) 65%, transparent);
   color: color-mix(in srgb, var(--status-color) 80%, #f8fafc 35%);
@@ -963,6 +966,9 @@ a:hover {
 
 .due-badge {
   --due-color: var(--accent);
+  background: var(--due-color, var(--accent));
+  border-color: var(--due-color, var(--accent));
+  color: #f8fafc;
   background: color-mix(in srgb, var(--due-color, var(--accent)) 32%, transparent);
   border-color: color-mix(in srgb, var(--due-color, var(--accent)) 55%, transparent);
   color: color-mix(in srgb, var(--due-color, var(--accent)) 80%, #f8fafc 35%);
