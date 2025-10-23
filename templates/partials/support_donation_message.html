@@ -1,0 +1,79 @@
+{% set donation_heading_id = donation_heading_id|default('support-development-heading') %}
+{% set wallets = [
+  {
+    'name': 'Bitcoin',
+    'image': 'img/Bitcoin.svg',
+    'alt': 'Bitcoin logo',
+    'address': 'bc1qnj60jqgp5uwu8uek843jxqlg7s5a05vlvatsw7'
+  },
+  {
+    'name': 'Ethereum',
+    'image': 'img/Ethereum.svg',
+    'alt': 'Ethereum logo',
+    'address': '0x4c12c4439D10962c5d2d9B04CFA3246b2A399d58'
+  },
+  {
+    'name': 'Litecoin',
+    'image': 'img/Litecoin.svg',
+    'alt': 'Litecoin logo',
+    'address': 'ltc1q4metd98pvz6v0y4akr33rcq3pyana7sr97gjuu'
+  },
+  {
+    'name': 'Dogecoin',
+    'image': 'img/Dogecoin.svg',
+    'alt': 'Dogecoin logo',
+    'address': 'D6iYuzD6moPusdciMBQRfyryxNJsmiVtRH'
+  },
+  {
+    'name': 'Shiba Inu',
+    'image': 'img/Shiba-Inu.svg',
+    'alt': 'Shiba Inu logo',
+    'address': '0x4c12c4439D10962c5d2d9B04CFA3246b2A399d58'
+  },
+  {
+    'name': 'XRP',
+    'image': 'img/xrp.svg',
+    'alt': 'XRP logo',
+    'address': 'rhB3NffCBbrAVkdAVFsVQWHa3NBJLKXaf1'
+  },
+  {
+    'name': 'Monero',
+    'image': 'img/Monero.svg',
+    'alt': 'Monero logo',
+    'address': '4BAMFNn71DhZTd2G6kmESPG7n3sG9pW4bWsKAZaKjZ67EMnTuJqJW1DH1cr1scZxP57BQshpEr2fz5KKSP4K3ScvRkH7N8S'
+  }
+] %}
+<h2 id="{{ donation_heading_id }}" class="donation-title">Support development</h2>
+<p class="donation-intro">
+  If TicketTracker makes your day-to-day work easier and you’d like to say thanks, you can optionally send a tip using any of the
+  wallets below. Every contribution goes right back into the coffee and gadgets fund.
+</p>
+<table class="donation-table">
+  <thead>
+    <tr>
+      <th scope="col">Cryptocurrency</th>
+      <th scope="col">Address</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for wallet in wallets %}
+      <tr>
+        <th scope="row">
+          <span class="donation-wallet">
+            <img
+              src="{{ url_for('static', filename=wallet.image) }}"
+              alt="{{ wallet.alt }}"
+              height="24"
+              width="24"
+            />
+            <strong>{{ wallet.name }}</strong>
+          </span>
+        </th>
+        <td><code>{{ wallet.address }}</code></td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<blockquote class="donation-footnote">
+  Tips are always appreciated but never expected—they don’t grant special access, support guarantees, or priority handling.
+</blockquote>
