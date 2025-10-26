@@ -2,6 +2,8 @@
 
 TicketTracker is a lightweight, local-first ticket and task-tracking system. It behaves like a help desk for one person or a small group, but without servers, user accounts, or admin rights. It runs entirely in user space on macOS, Linux, or Windows using a simple Python stack (Flask, SQLAlchemy, SQLite, Jinja2).
 
+**NOTE:** This is a Single User instance and as such has no authentication mechanism nor does it have input sanitization, etc... It is NOT meant to be exposed to an Intranet let alone to the INTERNET. You assume any and all risk associated with using it in a way other than intended. It was written as a web application simply because that was quick and convenient.
+
 ## Table of contents
 
 - [Stack](#stack)
